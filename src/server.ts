@@ -1,9 +1,9 @@
-import express from 'express';
 import { pino } from 'pino';
 
 import { getDbConnection } from '../db/init';
 
-const app = express();
+import { app } from './app';
+
 
 const logger = pino();
 
