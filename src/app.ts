@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import express, { json as jsonParser } from 'express';
+import express, { json as jsonParser, urlencoded } from 'express';
 import { pinoHttp } from 'pino-http';
 
 import { LOG_LEVEL } from '../config/app.config';
@@ -11,6 +11,7 @@ import queueRouter from './queue/queue.router';
 export const app = express();
 
 app.use(jsonParser());
+app.use(urlencoded());
 app.use(pinoHttp({
   useLevel: LOG_LEVEL,
   genReqId: (req, res) => {
