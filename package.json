@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
-    "start:dev": "nodemon --watch './**/*.ts' --exec 'ts-node' src/server.ts",
+    "db:migration:create": "knex --knexfile ./db/knexfile.ts migrate:make",
+    "db:migration:up": "knex --knexfile ./db/knexfile.ts migrate:latest",
+    "start:dev": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -16,6 +18,7 @@
     "@types/node": "^20.11.18",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
+    "dotenv": "^16.4.4",
     "eslint": "^8.56.0",
     "eslint-config-sensible-style": "^0.1.2",
     "eslint-import-resolver-typescript": "^3.6.1",

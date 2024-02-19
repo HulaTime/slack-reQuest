@@ -7,8 +7,8 @@ import { app } from './app';
 
 const logger = pino();
 
-app.listen(3000, () => {
-  getDbConnection();
+app.listen(3000, async () => {
+  const db = getDbConnection();
+  await db.raw('select 1;');
   logger.info(`Listening on port ${3000}`);
 });
-

@@ -18,8 +18,8 @@ const dbInit = (): () => Knex => {
           database: DB_NAME,
         },
         pool: {
-          max: 0,
-          min: 10,
+          min: 0,
+          max: 10,
         },
       });
     }
