@@ -8,11 +8,12 @@ const router = Router();
 
 router.post('/queues', async (req, res, next) => {
   try {
-    const { body, log: logger } = req;
-    req.log.info({ body }, 'Received create queue request');
+    const { body: { text, user_id }, log: logger } = req;
+    console.log('--------------------------> req:', req.body);
+    req.log.info({ text, user_id }, 'Received create queue request');
     const controller = new QueueController(req.log, new QueueDataMapper(logger));
-    await controller.createQueue(body.text);
-    res.status(200).end();
+    const queue = await controller.createQueue(text, user_id);
+    res.status(201).json(queue);
   } catch (err) {
     req.log.error({ err }, 'Failed to process create queue request');
     next(err);
