@@ -14,7 +14,7 @@ describe('POST /queues', () => {
   afterAll(async () => {
     const db = getDbConnection();
     await db('queues').del()
-      .where('name', 'like', `%${queueNameSuffix}` );
+      .where('name', 'like', `%${queueNameSuffix}`);
     await db.destroy();
   });
 
@@ -27,7 +27,7 @@ describe('POST /queues', () => {
       .expect(201);
   });
 
-  test('I should get the newly created resource in the response', async () => {
+  test('I should get the newly created resources in the response', async () => {
     const payload: TestRequest = { text: `new queue 2${queueNameSuffix}`, user_id: '1234' };
     const { body } = await supertest(app)
       .post('/queues')
@@ -39,6 +39,16 @@ describe('POST /queues', () => {
       userId: payload.user_id,
       createdAt: expect.any(String),
     });
+  });
+
+  test('I should get a 400 Bad request if I send a request missing required attributes', async () => {
+    const payload: TestRequest = { text: `new queue 2${queueNameSuffix}` };
+    const { body } = await supertest(app)
+      .post('/queues')
+      .set('Content-Type', 'application/x-www-form-urlencoded')
+      .send(payload)
+      .expect(400);
+    expect(body).toEqual({ message: 'Bad Request', errorDetails: { missingFields: ['user_id'] } });
   });
 });
 
