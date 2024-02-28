@@ -1,7 +1,7 @@
-import { TextObject } from './TextObject';
+import { SlackTextObject, TextObject } from './TextObject';
 
 export interface SlackOption {
-  text: TextObject;
+  text: SlackTextObject;
   value: string;
   description?: TextObject;
   url?: string;
