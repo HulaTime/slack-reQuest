@@ -21,8 +21,8 @@ const testSlashCommand: SlackSlashCommandPayload = {
   channel_name: 'my_channel',
   user_id: '9876',
   user_name: 'tarquin',
-  command: 'command',
-  text: 'command foo bar',
+  command: '/slackq',
+  text: 'create foo bar',
   response_url: 'http://127.0.0.1:3000/response',
   trigger_id: '452',
   api_app_id: 'optional_app_id',
@@ -41,6 +41,12 @@ describe('SlashCommand', () => {
     expect(() => new SlashCommand({} as SlackSlashCommandPayload, logger)).toThrow(new Error('Invalid Slash Command'));
   });
 
+  test('The command action and args should be accessible after instantiation', () => {
+    const slashCommand = new SlashCommand(testSlashCommand, logger);
+    expect(slashCommand.action).toEqual('create');
+    expect(slashCommand.args).toEqual('foo bar');
+  });
+
   describe('#getCommand', () => {
     test('should return the command from the supplied payload', () => {
       const slashCommand = new SlashCommand(testSlashCommand, logger);
@@ -49,9 +55,14 @@ describe('SlashCommand', () => {
   });
 
   describe('#getCommandArgs', () => {
-    test('should return everything from the payload text, after the first word (command)', () => {
+    test('should return the first word of the payload text as the command action', () => {
       const slashCommand = new SlashCommand(testSlashCommand, logger);
-      expect(slashCommand.getCommandArgs()).toEqual('foo bar');
+      expect(slashCommand.getCommandArgs().action).toEqual('create');
+    });
+
+    test('should return everything after the first word of the payload text as the command args', () => {
+      const slashCommand = new SlashCommand(testSlashCommand, logger);
+      expect(slashCommand.getCommandArgs().args).toEqual('foo bar');
     });
   });
 });

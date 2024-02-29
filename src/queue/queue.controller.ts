@@ -8,11 +8,20 @@ import { PlainTextObject } from '../common/compositionObjects/TextObject';
 import OptionObject from '../common/compositionObjects/OptionObject';
 import InputBlock from '../common/blocks/InputBlock';
 import QueueDataMapper, { Queue } from '../../datamappers/Queue';
+import SlashCommand from '../common/SlashCommand';
 
 import { QueueTypes } from './queue.router';
 
 export default class QueueController {
-  constructor(private readonly logger: Logger, private readonly datamapper: QueueDataMapper) { }
+  private readonly action: string;
+
+  constructor(
+    private readonly slashCommand: SlashCommand,
+    private readonly logger: Logger,
+    private readonly datamapper: QueueDataMapper,
+  ) {
+    this.action = this.slashCommand.action;
+  }
 
   buildSelectQueueTypeMessage(): MessagePayload {
     const radioButtons = new RadioButton();
@@ -33,5 +42,11 @@ export default class QueueController {
     });
     this.logger.info({ result }, `Successfully created a new queue "${name}"`);
     return result;
+  }
+
+  execute(): MessagePayload | undefined {
+    if (this.action === 'create') {
+      return this.buildSelectQueueTypeMessage();
+    }
   }
 }

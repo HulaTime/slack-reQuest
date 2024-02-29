@@ -1,11 +1,7 @@
 import { RequestHandler, Router } from 'express';
 
 import QueueDataMapper from '../../datamappers/Queue';
-import RadioButton from '../common/blocks/elements/RadioButton';
-import OptionObject from '../common/compositionObjects/OptionObject';
-import { PlainTextObject } from '../common/compositionObjects/TextObject';
-import MessagePayload from '../common/MessagePayload';
-import InputBlock from '../common/blocks/InputBlock';
+import SlashCommand from '../common/SlashCommand';
 
 import QueueController from './queue.controller';
 
@@ -43,38 +39,19 @@ const validateSlashCommandRequest: RequestHandler = (req, res, next): void => {
   }
 };
 
-type ParsedSlashCommand = { command: string; input: string };
-
-const parseSlashCommand = (text: string): ParsedSlashCommand => {
-  const [, command, input] = text.match(/^(\S+)\s(.+)$/) ?? [];
-  return { command, input };
-};
-
 export enum QueueTypes {
   directRequest = 'Direct Request',
   codeReview = 'Code Review',
   release = 'Release'
 };
 
-router.post('/queues/initiate', validateSlashCommandRequest, async (req, res, next) => {
+router.post('/queues', validateSlashCommandRequest, async (req, res, next) => {
   try {
-    const { body: { text, user_id }, log: logger } = req;
-    req.log.info({ text, user_id }, 'Received create queue request');
-    const controller = new QueueController(req.log, new QueueDataMapper(logger));
-    const response = controller.buildSelectQueueTypeMessage();
-    res.status(201).json(response);
-  } catch (err) {
-    req.log.error({ err }, 'Failed to process create queue request');
-    next(err);
-  }
-});
-
-router.post('/queues/create', validateSlashCommandRequest, async (req, res, next) => {
-  try {
-    const { body: { text, user_id }, log: logger } = req;
-    req.log.info({ text, user_id }, 'Received create queue request');
-    const controller = new QueueController(req.log, new QueueDataMapper(logger));
-    const response = controller.buildSelectQueueTypeMessage();
+    const { body, log: logger } = req;
+    req.log.info({ ...body }, 'Received create queue request');
+    const slashCommand = new SlashCommand(body, logger);
+    const controller = new QueueController(slashCommand, logger, new QueueDataMapper(logger));
+    const response = controller.execute();
     res.status(201).json(response);
   } catch (err) {
     req.log.error({ err }, 'Failed to process create queue request');
