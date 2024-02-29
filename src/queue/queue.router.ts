@@ -50,27 +50,31 @@ const parseSlashCommand = (text: string): ParsedSlashCommand => {
   return { command, input };
 };
 
-enum QueueTypes {
+export enum QueueTypes {
   directRequest = 'Direct Request',
   codeReview = 'Code Review',
   release = 'Release'
 };
 
-router.post('/queues', validateSlashCommandRequest, async (req, res, next) => {
+router.post('/queues/initiate', validateSlashCommandRequest, async (req, res, next) => {
   try {
     const { body: { text, user_id }, log: logger } = req;
     req.log.info({ text, user_id }, 'Received create queue request');
-    // const { input } = parseSlashCommand(text);
-    // const controller = new QueueController(req.log, new QueueDataMapper(logger));
-    // const { name } = await controller.createQueue(input, user_id);
-    const radioButtons = new RadioButton();
-    (Object.keys(QueueTypes) as Array<keyof typeof QueueTypes>).forEach(queueType => {
-      const queueText = new PlainTextObject(QueueTypes[queueType]);
-      radioButtons.addOption(new OptionObject(queueText, queueText.text));
-    });
-    const radioBlock = new InputBlock(new PlainTextObject('Select queue type'), radioButtons);
-    logger.info({ radioBlock: radioBlock.render() });
-    const response: MessagePayload = { text: 'Some text', blocks: [radioBlock.render()] };
+    const controller = new QueueController(req.log, new QueueDataMapper(logger));
+    const response = controller.buildSelectQueueTypeMessage();
+    res.status(201).json(response);
+  } catch (err) {
+    req.log.error({ err }, 'Failed to process create queue request');
+    next(err);
+  }
+});
+
+router.post('/queues/create', validateSlashCommandRequest, async (req, res, next) => {
+  try {
+    const { body: { text, user_id }, log: logger } = req;
+    req.log.info({ text, user_id }, 'Received create queue request');
+    const controller = new QueueController(req.log, new QueueDataMapper(logger));
+    const response = controller.buildSelectQueueTypeMessage();
     res.status(201).json(response);
   } catch (err) {
     req.log.error({ err }, 'Failed to process create queue request');

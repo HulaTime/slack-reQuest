@@ -1,5 +1,5 @@
-import ConfirmationDialogueObject, { SlackConfirmationDialogue } from 'src/common/compositionObjects/ConfirmationDialogObject';
-import OptionObject, { SlackOption } from 'src/common/compositionObjects/OptionObject';
+import ConfirmationDialogueObject, { SlackConfirmationDialogue } from '../../compositionObjects/ConfirmationDialogObject';
+import OptionObject, { SlackOption } from '../../compositionObjects/OptionObject';
 
 type SlackRadioButton = {
   type: string;
