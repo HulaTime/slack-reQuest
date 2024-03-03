@@ -1,10 +1,10 @@
-import { TextObject } from '../compositionObjects/TextObject';
+import { SlackTextObject, TextObject } from '../compositionObjects/TextObject';
 
 import Block from './Block';
 
 export type SlackSectionBlock = {
   type: string;
-  text: TextObject;
+  text: SlackTextObject;
   block_id: string;
 }
 
@@ -28,7 +28,7 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
     return {
       type: this.type,
       block_id: this.blockId,
-      text: this.text,
+      text: this.text.render(),
     };
   }
 };

@@ -2,16 +2,16 @@ import { randomUUID } from 'node:crypto';
 
 import { Logger } from 'pino';
 
-import { MessagePayload } from '../common/types';
+import HeaderBlock from '../common/blocks/HeaderBlock';
 import RadioButton from '../common/blocks/elements/RadioButton';
-import { MarkdownTextObject, PlainTextObject } from '../common/compositionObjects/TextObject';
 import OptionObject from '../common/compositionObjects/OptionObject';
-import { ActionBlock } from '../common/blocks';
-import QueueDataMapper, { Queue } from '../../datamappers/Queue';
 import SlashCommand from '../common/SlashCommand';
-import SectionBlock from '../common/blocks/SectionBlock';
 import DividerBlock from '../common/blocks/DividerBlock';
+import QueueDataMapper, { Queue } from '../../datamappers/Queue';
 import { Button } from '../common/blocks/elements';
+import { ActionBlock } from '../common/blocks';
+import { MessagePayload } from '../common/types';
+import { PlainTextObject } from '../common/compositionObjects/TextObject';
 
 import { QueueTypes } from './commands.router';
 
@@ -32,7 +32,7 @@ export default class QueueController {
       const queueText = new PlainTextObject(QueueTypes[queueType]);
       radioButtons.addOption(new OptionObject(queueText, queueText.text));
     });
-    const header = new SectionBlock(new MarkdownTextObject('*Select queue type*'));
+    const header = new HeaderBlock(new PlainTextObject('Select queue type'));
     const actionsBlock = new ActionBlock([
       radioButtons,
       new Button(
