@@ -5,8 +5,8 @@ import { pinoHttp } from 'pino-http';
 
 import { LOG_LEVEL } from '../config/app.config';
 
-import queueRouter from './queue/queue.router';
-
+import commandsRouter from './commands/commands.router';
+import interactionsRouter from './interactions/interactions.router';
 
 export const app = express();
 
@@ -21,5 +21,6 @@ app.use(pinoHttp({
   },
 }));
 
-app.use(queueRouter);
+app.use(commandsRouter);
+app.use(interactionsRouter);
 

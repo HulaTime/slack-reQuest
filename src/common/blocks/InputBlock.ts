@@ -13,7 +13,7 @@ export type SlackInputBlock = {
   optional?: boolean;
 }
 
-export default class InputBlock extends Block {
+export default class InputBlock extends Block<SlackInputBlock> {
   /** A label that appears above an input element in the form of a text object that must have type
     * of plain_text. Maximum length for the text in this field is 2000 characters.
   */

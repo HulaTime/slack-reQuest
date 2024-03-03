@@ -3,8 +3,7 @@ import { RequestHandler, Router } from 'express';
 import QueueDataMapper from '../../datamappers/Queue';
 import SlashCommand from '../common/SlashCommand';
 
-import QueueController from './queue.controller';
-
+import CommandsController from './commands.controller';
 
 const router = Router();
 
@@ -50,7 +49,7 @@ router.post('/queues', validateSlashCommandRequest, async (req, res, next) => {
     const { body, log: logger } = req;
     req.log.info({ ...body }, 'Received create queue request');
     const slashCommand = new SlashCommand(body, logger);
-    const controller = new QueueController(slashCommand, logger, new QueueDataMapper(logger));
+    const controller = new CommandsController(slashCommand, logger, new QueueDataMapper(logger));
     const response = controller.execute();
     res.status(201).json(response);
   } catch (err) {

@@ -5,7 +5,7 @@ type SlackRadioButton = {
   type: string;
   options: Array<SlackOption>;
   initial_option?: SlackOption;
-  action_id?: string;
+  action_id: string;
   confirm?: SlackConfirmationDialogue;
   focus_on_load?: boolean;
 }
@@ -18,9 +18,9 @@ export default class RadioButton {
 
   options: Array<OptionObject> = [];
 
-  initialOption?: OptionObject;
+  actionId: string;
 
-  action_id?: string;
+  initialOption?: OptionObject;
 
   confirm?: ConfirmationDialogueObject;
 
@@ -28,6 +28,11 @@ export default class RadioButton {
     * element can be set to true. Defaults to false.
   */
   focusOnLoad?: boolean;
+
+  constructor(actionId: string, confirmationDialogue?: ConfirmationDialogueObject) {
+    this.actionId = actionId;
+    this.confirm = confirmationDialogue;
+  }
 
   addOption(option: OptionObject): void {
     if (this.options.length >= this.maxOptions) {
@@ -46,6 +51,7 @@ export default class RadioButton {
   render(): SlackRadioButton {
     return {
       type: this.type,
+      action_id: this.actionId,
       options: this.options.map(option => option.render()),
       initial_option: this.initialOption,
       confirm: this.confirm?.render(),

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-export default abstract class Block {
+export default abstract class Block<RenderType> {
   type: string;
 
   blockId: string = randomUUID();
@@ -8,4 +8,7 @@ export default abstract class Block {
   constructor(type: string) {
     this.type = type;
   };
+
+  abstract render(): RenderType
 };
+

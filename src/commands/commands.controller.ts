@@ -4,13 +4,16 @@ import { Logger } from 'pino';
 
 import { MessagePayload } from '../common/types';
 import RadioButton from '../common/blocks/elements/RadioButton';
-import { PlainTextObject } from '../common/compositionObjects/TextObject';
+import { MarkdownTextObject, PlainTextObject } from '../common/compositionObjects/TextObject';
 import OptionObject from '../common/compositionObjects/OptionObject';
-import InputBlock from '../common/blocks/InputBlock';
+import { ActionBlock } from '../common/blocks';
 import QueueDataMapper, { Queue } from '../../datamappers/Queue';
 import SlashCommand from '../common/SlashCommand';
+import SectionBlock from '../common/blocks/SectionBlock';
+import DividerBlock from '../common/blocks/DividerBlock';
+import { Button } from '../common/blocks/elements';
 
-import { QueueTypes } from './queue.router';
+import { QueueTypes } from './commands.router';
 
 export default class QueueController {
   private readonly action: string;
@@ -24,14 +27,28 @@ export default class QueueController {
   }
 
   buildSelectQueueTypeMessage(): MessagePayload {
-    const radioButtons = new RadioButton();
+    const radioButtons = new RadioButton('select-queue-type');
     (Object.keys(QueueTypes) as Array<keyof typeof QueueTypes>).forEach(queueType => {
       const queueText = new PlainTextObject(QueueTypes[queueType]);
       radioButtons.addOption(new OptionObject(queueText, queueText.text));
     });
-    const radioBlock = new InputBlock(new PlainTextObject('Select queue type'), radioButtons);
-    this.logger.info({ radioBlock: radioBlock.render() });
-    return { text: 'Some text', blocks: [radioBlock.render()] };
+    const header = new SectionBlock(new MarkdownTextObject('*Select queue type*'));
+    const actionsBlock = new ActionBlock([
+      radioButtons,
+      new Button(
+        new PlainTextObject('Submit'),
+        'submit-queue-type',
+      ),
+    ]);
+    this.logger.info({ actionsBlock: actionsBlock.render() });
+    return { 
+      text: 'Some text',
+      blocks: [
+        header.render(),
+        new DividerBlock().render(),
+        actionsBlock.render(),
+      ],
+    };
   }
 
   async createQueue(name: string, userId: string): Promise<Queue> {
@@ -47,6 +64,8 @@ export default class QueueController {
   execute(): MessagePayload | undefined {
     if (this.action === 'create') {
       return this.buildSelectQueueTypeMessage();
+    } else {
+      this.logger.warn({ action: this.action }, 'Unexpected action type');
     }
   }
 }
