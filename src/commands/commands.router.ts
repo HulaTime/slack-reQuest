@@ -1,6 +1,6 @@
 import { RequestHandler, Router } from 'express';
 
-import QueueDataMapper from '../../datamappers/Queue';
+import QueueDataMapper from '../datamappers/QueueDatamapper';
 import SlashCommand from '../common/SlashCommand';
 
 import CommandsController from './commands.controller';

@@ -4,8 +4,8 @@ import supertest, { Response } from 'supertest';
 
 import { app } from '../src/app';
 import { SlashCommandReq } from '../src/common/types';
-import { getDbConnection } from '../db/init';
-import { Queue } from '../datamappers/Queue';
+import { getDbConnection } from '../src/db/init';
+import { Queue } from '../src/datamappers/QueueDatamapper';
 
 type TestRequest = Partial<SlashCommandReq>;
 

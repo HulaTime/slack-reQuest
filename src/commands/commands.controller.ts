@@ -7,7 +7,7 @@ import RadioButton from '../common/blocks/elements/RadioButton';
 import OptionObject from '../common/compositionObjects/OptionObject';
 import SlashCommand from '../common/SlashCommand';
 import DividerBlock from '../common/blocks/DividerBlock';
-import QueueDataMapper, { Queue } from '../../datamappers/Queue';
+import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
 import { Button } from '../common/blocks/elements';
 import { ActionBlock } from '../common/blocks';
 import { MessagePayload } from '../common/types';
@@ -15,7 +15,7 @@ import { PlainTextObject } from '../common/compositionObjects/TextObject';
 
 import { QueueTypes } from './commands.router';
 
-export default class QueueController {
+export default class CommandsController {
   private readonly action: string;
 
   constructor(

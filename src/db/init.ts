@@ -2,7 +2,7 @@ import knex, { Knex } from 'knex';
 
 import {
   DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER,
-} from '../config/db.config';
+} from '../../config/db.config';
 
 const dbInit = (): () => Knex => {
   let connection: Knex;

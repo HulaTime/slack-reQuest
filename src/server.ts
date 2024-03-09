@@ -1,6 +1,6 @@
 import { pino } from 'pino';
 
-import { getDbConnection } from '../db/init';
+import { getDbConnection } from '../src/db/init';
 
 import { app } from './app';
 
