@@ -1,4 +1,4 @@
-import { SlackTextObject, TextObject } from '../compositionObjects/TextObject';
+import { SlackTextObject, ITextObject } from '../compositionObjects/TextObject';
 
 import Block from './Block';
 
@@ -12,11 +12,11 @@ export default class HeaderBlock extends Block<SlackHeaderBlock> {
   /** The text for the block, in the form of a plain_text text object. Maximum length for the text
     * in this field is 150 characters.
   */
-  text: TextObject;
+  text: ITextObject;
 
   maxTextLength: number = 100;
 
-  constructor(text: TextObject) {
+  constructor(text: ITextObject) {
     super('header');
     this.text = text;
     this.validateTextLength();

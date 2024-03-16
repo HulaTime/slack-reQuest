@@ -1,4 +1,4 @@
-import { SlackTextObject, TextObject } from '../compositionObjects/TextObject';
+import { SlackTextObject, ITextObject } from '../compositionObjects/TextObject';
 
 import Block from './Block';
 
@@ -9,17 +9,17 @@ export type SlackSectionBlock = {
 }
 
 export default class SectionBlock extends Block<SlackSectionBlock> {
-  text: TextObject;
+  text: ITextObject;
 
   /** Required if no text is provided. An array of text objects. Any text objects included with
     * fields will be rendered in a compact format that allows for 2 columns of side-by-side text.
     * Maximum number of items is 10. Maximum length for the text in each item is 2000 characters. 
   */
-  fields?: Array<TextObject>;
+  fields?: Array<ITextObject>;
 
   accessory?: Record<string, unknown>;
 
-  constructor(text: TextObject) {
+  constructor(text: ITextObject) {
     super('section');
     this.text = text;
   }

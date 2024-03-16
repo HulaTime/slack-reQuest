@@ -1,24 +1,24 @@
-import { SlackTextObject, TextObject } from './TextObject';
+import { SlackTextObject, ITextObject } from './TextObject';
 
 export interface SlackOption {
   text: SlackTextObject;
   value: string;
-  description?: TextObject;
+  description?: ITextObject;
   url?: string;
 }
 
 export default class OptionObject {
   // This will be the text shown in slack for the option
-  text: TextObject;
+  text: ITextObject;
 
   // This is the value that the appliation will receive when this option is selected
   value: string;
 
-  description?: TextObject;
+  description?: ITextObject;
 
   url?: string;
 
-  constructor(text: TextObject, value: string) {
+  constructor(text: ITextObject, value: string) {
     this.text = text;
     this.value = value;
   }

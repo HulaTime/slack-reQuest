@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-import { SlackConfirmationDialogue } from '../../compositionObjects/ConfirmationDialogObject';
-import { SlackTextObject, TextObject } from '../../compositionObjects/TextObject';
+import { ITextObject, SlackTextObject } from '../compositionObjects/TextObject';
+import { SlackConfirmationDialogue } from '../compositionObjects/ConfirmationDialogObject';
 
 export type SlackButton = {
   type: string;
@@ -17,11 +17,11 @@ export type SlackButton = {
 export default class Button {
   type: string = 'button';
   
-  text: TextObject;
+  text: ITextObject;
 
   actionId: string;
   
-  constructor(text: TextObject, actionId: string = randomUUID()) {
+  constructor(text: ITextObject, actionId: string = randomUUID()) {
     this.text = text;
     this.actionId = actionId;
   }

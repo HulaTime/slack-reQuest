@@ -1,16 +1,13 @@
 import { Logger } from 'pino';
 
-import HeaderBlock from '../common/blocks/HeaderBlock';
-import RadioButton from '../common/blocks/elements/RadioButton';
-import OptionObject from '../common/compositionObjects/OptionObject';
-import SlashCommand from '../common/SlashCommand';
-import DividerBlock from '../common/blocks/DividerBlock';
-import { Button } from '../common/blocks/elements';
-import { ActionBlock } from '../common/blocks';
-import { MessagePayload } from '../common/types';
-import { PlainTextObject } from '../common/compositionObjects/TextObject';
+import {
+  ActionBlock, DividerBlock, HeaderBlock, SectionBlock, 
+} from '../lib/slack/blocks';
+import { OptionObject, TextObject } from '../lib/slack/compositionObjects';
+import { Button, RadioButton } from '../lib/slack/elements';
 import QueueDataMapper from '../datamappers/QueueDatamapper';
-import SectionBlock from '../common/blocks/SectionBlock';
+import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
+import { SlashCommand } from '../lib/slack/messages';
 
 import { QueueTypes } from './commands.router';
 
@@ -24,48 +21,45 @@ export default class CommandsController {
     this.action = this.slashCommand.action;
   }
 
-  buildSelectQueueTypeMessage(): MessagePayload {
-    const radioButtons = new RadioButton('select-queue-type');
+  selectQueueTypeMessage(): SlackMessagePayload {
+    const header = new HeaderBlock(new TextObject('Select queue type'));
+    const submitButton = new Button(new TextObject('Submit'), 'submit-queue-type');
+    const selectQueueRadioMenu = new RadioButton('select-queue-type');
     (Object.keys(QueueTypes) as Array<keyof typeof QueueTypes>).forEach(queueType => {
-      const queueText = new PlainTextObject(QueueTypes[queueType]);
-      radioButtons.addOption(new OptionObject(queueText, queueText.text));
+      const queueText = new TextObject(QueueTypes[queueType]);
+      selectQueueRadioMenu.addOption(new OptionObject(queueText, queueText.text));
     });
-    const header = new HeaderBlock(new PlainTextObject('Select queue type'));
     const actionsBlock = new ActionBlock([
-      radioButtons,
-      new Button(
-        new PlainTextObject('Submit'),
-        'submit-queue-type',
-      ),
+      selectQueueRadioMenu,
+      submitButton,
     ]);
-    this.logger.info({ actionsBlock: actionsBlock.render() });
-    return { 
-      text: 'Some text',
-      blocks: [
-        header.render(),
-        new DividerBlock().render(),
-        actionsBlock.render(),
-      ],
-    };
+    const blocks = [
+      header,
+      new DividerBlock(),
+      actionsBlock,
+    ];
+    const messagePayload = new MessagePayload('select-queue-message', blocks);
+    this.logger.info({ messagePayload }, 'Successfully created select queue type slack message payload');
+    return messagePayload.render(); 
   }
-  
-  async buildListQueuesMessage(): Promise<MessagePayload> {
+
+  async buildListQueuesMessage(): Promise<SlackMessagePayload> {
     const queueDataMapper = new QueueDataMapper(this.logger);
     const queues = await queueDataMapper.list({ userId: this.slashCommand.userId });
-    const header = new HeaderBlock(new PlainTextObject('My Queues'));
+    const header = new HeaderBlock(new TextObject('My Queues'));
     const blocks = [
       header.render(),
       new DividerBlock().render(),
     ];
     queues.forEach(queue => {
-      blocks.push(new SectionBlock(new PlainTextObject(queue.name)).render());
+      blocks.push(new SectionBlock(new TextObject(queue.name)).render());
     });
     return { text: '', blocks };
   }
 
-  async execute(): Promise<MessagePayload | undefined> {
+  async execute(): Promise<SlackMessagePayload | undefined> {
     if (this.action === 'create') {
-      return this.buildSelectQueueTypeMessage();
+      return this.selectQueueTypeMessage();
     } else if (this.action === 'list') {
       return await this.buildListQueuesMessage();
     } else {

@@ -1,4 +1,4 @@
-import { PlainTextObject, SlackTextObject } from './TextObject';
+import { TextObject, SlackTextObject } from './TextObject';
 
 enum SlackStyle {
   green = 'primary',
@@ -16,25 +16,25 @@ export interface SlackConfirmationDialogue {
 /** https://api.slack.com/reference/block-kit/composition-objects#confirm */
 export default class ConfirmationDialogueObject {
   // The title for the confirmation dialogue
-  title: PlainTextObject;
+  title: TextObject;
 
   // Explanatory text for the confirmation dialogue
-  text: PlainTextObject;
+  text: TextObject;
 
   // This is the text for the button that confirms the action
-  confirm: PlainTextObject;
+  confirm: TextObject;
 
   // This is the text for the button that cancels the action
-  deny: PlainTextObject;
+  deny: TextObject;
 
   // Danger will give the confirm button a red background, primary will give it a green background
   style: SlackStyle = SlackStyle.green;
 
   constructor(
-    title: PlainTextObject,
-    text: PlainTextObject,
-    confirm: PlainTextObject,
-    deny: PlainTextObject,
+    title: TextObject,
+    text: TextObject,
+    confirm: TextObject,
+    deny: TextObject,
   ) {
     this.title = title;
     this.text = text;

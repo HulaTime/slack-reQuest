@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import SlashCommand from '../common/SlashCommand';
+import { SlashCommand } from '../lib/slack/messages';
 
 import CommandsController from './commands.controller';
 

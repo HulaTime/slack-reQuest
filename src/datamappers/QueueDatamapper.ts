@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Logger } from 'pino';
 
-import Obj from '../lib/Obj';
 import { getDbConnection } from '../db/init';
+import Obj from '../lib/utils/Obj';
 
 export interface Queue {
   id: string;

@@ -1,5 +1,6 @@
+import { Elements } from '../elements';
+
 import Block from './Block';
-import { Elements } from './elements';
 
 export type SlackActionBlock = {
   type: string;

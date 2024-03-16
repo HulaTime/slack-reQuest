@@ -10,7 +10,7 @@ export type SlackTextObject = {
   verbatim?: boolean;
 }
 
-export interface TextObject {
+export interface ITextObject {
   type: SlackTextType;
   text: string;
   emoji?: boolean;
@@ -25,7 +25,7 @@ export interface TextObject {
 }
 
 
-export class PlainTextObject implements TextObject {
+export class TextObject implements ITextObject {
   type = SlackTextType.plainText;
 
   text: string;
@@ -49,7 +49,7 @@ export class PlainTextObject implements TextObject {
   }
 }
 
-export class MarkdownTextObject extends PlainTextObject implements TextObject {
+export class MarkdownTextObject extends TextObject implements ITextObject {
   type = SlackTextType.markdown;
 
   emoji?: boolean;
