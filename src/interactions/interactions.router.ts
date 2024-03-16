@@ -1,8 +1,7 @@
-import { randomUUID } from 'crypto';
-
 import { Router } from 'express';
 
 import QueueDataMapper from '../datamappers/QueueDatamapper';
+import { ActionIdentifiers } from '../common/identifiers';
 
 const router = Router();
 
@@ -47,8 +46,8 @@ router.post('/interactions', async (req, res, next) => {
     } = interactionPayload;
 
     const [primaryAction] = actions;
-    if (primaryAction.action_id === 'submit-queue-type') {
-      const stateValue = state.values[primaryAction.block_id]['select-queue-type'];
+    if (primaryAction.action_id === ActionIdentifiers.submitQueueType) {
+      const stateValue = state.values[primaryAction.block_id][ActionIdentifiers.selectQueueType];
       logger.info({ stateValue });
       const queueName = stateValue.selected_option.value;
       const queueDataMapper = new QueueDataMapper(logger);
