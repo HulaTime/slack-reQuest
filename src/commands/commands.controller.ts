@@ -1,13 +1,13 @@
 import { Logger } from 'pino';
 
-import {
-  ActionBlock, DividerBlock, HeaderBlock, SectionBlock, 
-} from '../lib/slack/blocks';
-import { OptionObject, TextObject } from '../lib/slack/compositionObjects';
-import { Button, RadioButton } from '../lib/slack/elements';
 import QueueDataMapper from '../datamappers/QueueDatamapper';
 import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
 import { SlashCommand } from '../lib/slack/messages';
+import { OptionObject, TextObject } from '../lib/slack/compositionObjects';
+import { Button, RadioButton } from '../lib/slack/elements';
+import {
+  ActionBlock, DividerBlock, HeaderBlock, SectionBlock, 
+} from '../lib/slack/blocks';
 
 import { QueueTypes } from './commands.router';
 
@@ -48,13 +48,15 @@ export default class CommandsController {
     const queues = await queueDataMapper.list({ userId: this.slashCommand.userId });
     const header = new HeaderBlock(new TextObject('My Queues'));
     const blocks = [
-      header.render(),
-      new DividerBlock().render(),
+      header,
+      new DividerBlock(),
     ];
     queues.forEach(queue => {
-      blocks.push(new SectionBlock(new TextObject(queue.name)).render());
+      blocks.push(new SectionBlock(new TextObject(queue.name)));
     });
-    return { text: '', blocks };
+    const messagePayload = new MessagePayload('list-queues-message', blocks);
+    this.logger.info({ messagePayload }, 'Successfully created list queues slack message payload');
+    return messagePayload.render();
   }
 
   async execute(): Promise<SlackMessagePayload | undefined> {
