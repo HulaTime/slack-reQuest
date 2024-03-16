@@ -12,7 +12,7 @@ export enum QueueTypes {
   release = 'Release'
 };
 
-router.post('/queues', async (req, res, next) => {
+router.post('/commands', async (req, res, next) => {
   try {
     const { body, log: logger } = req;
     req.log.info({ ...body }, 'Received slack command');
