@@ -23,25 +23,28 @@ export default class SlashCommand {
 
   args: string;
 
-  constructor(private readonly payload: SlackSlashCommandPayload, private readonly logger: Logger) {
+  userId: string;
+
+  constructor(private payload: SlackSlashCommandPayload, private readonly logger: Logger) {
     const isValid = this.isValidSlackSlashCommandPayload(payload);
     if (!isValid) {
       console.log('here');
       this.logger.warn({ isValid, payload }, 'Received invalid slash command payload');
       throw new Error('Invalid Slash Command');
     }
-    
+
     const actionArgs = this.getCommandArgs();
     this.action = actionArgs.action;
     this.args = actionArgs.args;
+    this.userId = payload.user_id;
   }
 
   getCommand(): string {
     return this.payload.command;
   }
 
-  getCommandArgs(): {action: string; args: string} {
-    const [, action, args] = this.payload.text.match(/^(\S+)\s(.+)$/) ?? [];
+  getCommandArgs(): { action: string; args: string } {
+    const [, action, args] = this.payload.text.match(/^(\S+)(\s(.+))?$/) ?? [];
     return { action, args };
   }
 

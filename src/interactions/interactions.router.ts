@@ -53,7 +53,6 @@ router.post('/interactions', async (req, res, next) => {
       const queueName = stateValue.selected_option.value;
       const queueDataMapper = new QueueDataMapper(logger);
       await queueDataMapper.create({
-        id: randomUUID(),
         name: queueName,
         userId,
       });

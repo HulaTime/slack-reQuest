@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { Logger } from 'pino';
 
 import HeaderBlock from '../common/blocks/HeaderBlock';
@@ -7,11 +5,12 @@ import RadioButton from '../common/blocks/elements/RadioButton';
 import OptionObject from '../common/compositionObjects/OptionObject';
 import SlashCommand from '../common/SlashCommand';
 import DividerBlock from '../common/blocks/DividerBlock';
-import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
 import { Button } from '../common/blocks/elements';
 import { ActionBlock } from '../common/blocks';
 import { MessagePayload } from '../common/types';
 import { PlainTextObject } from '../common/compositionObjects/TextObject';
+import QueueDataMapper from '../datamappers/QueueDatamapper';
+import SectionBlock from '../common/blocks/SectionBlock';
 
 import { QueueTypes } from './commands.router';
 
@@ -21,7 +20,6 @@ export default class CommandsController {
   constructor(
     private readonly slashCommand: SlashCommand,
     private readonly logger: Logger,
-    private readonly datamapper: QueueDataMapper,
   ) {
     this.action = this.slashCommand.action;
   }
@@ -50,20 +48,26 @@ export default class CommandsController {
       ],
     };
   }
-
-  async createQueue(name: string, userId: string): Promise<Queue> {
-    const result = await this.datamapper.create({
-      id: randomUUID(),
-      name,
-      userId,
+  
+  async buildListQueuesMessage(): Promise<MessagePayload> {
+    const queueDataMapper = new QueueDataMapper(this.logger);
+    const queues = await queueDataMapper.list({ userId: this.slashCommand.userId });
+    const header = new HeaderBlock(new PlainTextObject('My Queues'));
+    const blocks = [
+      header.render(),
+      new DividerBlock().render(),
+    ];
+    queues.forEach(queue => {
+      blocks.push(new SectionBlock(new PlainTextObject(queue.name)).render());
     });
-    this.logger.info({ result }, `Successfully created a new queue "${name}"`);
-    return result;
+    return { text: '', blocks };
   }
 
-  execute(): MessagePayload | undefined {
+  async execute(): Promise<MessagePayload | undefined> {
     if (this.action === 'create') {
       return this.buildSelectQueueTypeMessage();
+    } else if (this.action === 'list') {
+      return await this.buildListQueuesMessage();
     } else {
       this.logger.warn({ action: this.action }, 'Unexpected action type');
     }
