@@ -64,5 +64,11 @@ describe('SlashCommand', () => {
       const slashCommand = new SlashCommand(testSlashCommand, logger);
       expect(slashCommand.getCommandArgs().args).toEqual('foo bar');
     });
+
+    test('should correctly assign the command action when the command text only has one word', () => {
+      const input = { ...testSlashCommand, text: 'list' };
+      const slashCommand = new SlashCommand(input, logger);
+      expect(slashCommand.action).toEqual('list');
+    });
   });
 });

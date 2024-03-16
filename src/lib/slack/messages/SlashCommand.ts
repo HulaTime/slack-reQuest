@@ -44,7 +44,7 @@ export default class SlashCommand {
   }
 
   getCommandArgs(): { action: string; args: string } {
-    const [, action, args] = this.payload.text.match(/^(\S+)\s((.+))?$/) ?? [];
+    const [, action, , args] = this.payload.text.match(/^(\S+)(\s)?((.+))?$/) ?? [];
     return { action, args };
   }
 
