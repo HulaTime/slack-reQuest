@@ -1,25 +1,45 @@
 const isAlphanumeric = (str: string): boolean => /^[a-zA-Z0-9]+$/.test(str);
 
+type CamelCase<S extends string> =
+  S extends `${infer P}_${infer Q}${infer R}`
+  ? `${P}${Capitalize<Q>}${CamelCase<R>}`
+  : S;
+
+type SnakeToCamelCase<T> = {
+  [K in keyof T as CamelCase<K & string>]: T[K]
+};
+
+type SnakeCase<S extends string> = 
+  S extends `${infer P1}${infer P2}` 
+    ? P2 extends Capitalize<P2> 
+      ? `${Lowercase<P1>}_${SnakeCase<Lowercase<P2>>}`
+      : `${P1}${SnakeCase<P2>}`
+    : S;
+
+type CamelCaseToSnakeCase<T> = {
+  [K in keyof T as SnakeCase<K & string>]: T[K]
+};
+
 export default class Obj<T extends Record<string, unknown>> {
   constructor(private object: T) { }
 
-  convertToCamel(): void {
+  convertToCamel(): SnakeToCamelCase<T> {
     const newObject: Record<string, unknown> = {};
     for (const key in this.object) {
       newObject[this.stringToCamel(key)] = this.object[key];
     }
-    this.object = newObject as T;
+    return newObject as SnakeToCamelCase<T>;
   }
 
-  convertToSnake(): void {
+  convertToSnake(): CamelCaseToSnakeCase<T> {
     const newObject: Record<string, unknown> = {};
     for (const key in this.object) {
       newObject[this.stringToSnake(key)] = this.object[key];
     }
-    this.object = newObject as T;
+    return newObject as CamelCaseToSnakeCase<T>;
   }
 
-  value(): T {
+  original(): T {
     return this.object;
   }
 

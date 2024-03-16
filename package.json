@@ -7,9 +7,9 @@
     "build": "rm -rf dist && tsc",
     "db:start": "docker-compose up -d db && pnpm run db:migration:up",
     "db:stop": "docker-compose down db --remove-orphans",
-    "db:migration:create": "knex --knexfile ./db/knexfile.ts migrate:make",
-    "db:migration:up": "knex --knexfile ./db/knexfile.ts migrate:latest",
-    "db:migration:down": "knex --knexfile ./db/knexfile.ts migrate:rollback",
+    "db:migration:create": "knex --knexfile ./src/db/knexfile.ts migrate:make",
+    "db:migration:up": "knex --knexfile ./src/db/knexfile.ts migrate:latest",
+    "db:migration:down": "knex --knexfile ./src/db/knexfile.ts migrate:rollback",
     "start:dev": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
