@@ -28,7 +28,6 @@ export default class SlashCommand {
   constructor(private payload: SlackSlashCommandPayload, private readonly logger: Logger) {
     const isValid = this.isValidSlackSlashCommandPayload(payload);
     if (!isValid) {
-      console.log('here');
       this.logger.warn({ isValid, payload }, 'Received invalid slash command payload');
       throw new Error('Invalid Slash Command');
     }
