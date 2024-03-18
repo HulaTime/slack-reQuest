@@ -19,7 +19,7 @@ router.post('/commands', async (req, res, next) => {
     const slashCommand = new SlashCommand(body, logger);
     const controller = new CommandsController(slashCommand, logger);
     const response = await controller.execute();
-    res.status(201).json(response);
+    res.status(200).json(response);
   } catch (err) {
     req.log.error({ err }, 'Failed to process create queue request');
     next(err);
