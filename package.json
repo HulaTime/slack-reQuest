@@ -11,7 +11,7 @@
     "db:migration:up": "knex --knexfile ./src/db/knexfile.ts migrate:latest",
     "db:migration:down": "knex --knexfile ./src/db/knexfile.ts migrate:rollback",
     "start:dev": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
