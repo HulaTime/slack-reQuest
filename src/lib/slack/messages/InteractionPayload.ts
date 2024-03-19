@@ -27,6 +27,10 @@ export interface SlackInteractionPayload {
     username: string;
     team_id: string;
   };
+  channel?: {
+    id: string;
+    name: string;
+  };
   actions: SlackIteractionAction[];
   state: {
     values: {
@@ -38,12 +42,15 @@ export interface SlackInteractionPayload {
 export default class InteractionPayload {
   userId: string;
 
+  channelId?: string;
+
   primaryActions: SlackIteractionAction[];
 
   hasMultipleActions: boolean;
 
   constructor(private readonly payload: SlackInteractionPayload) {
     this.userId = this.payload.user.id;
+    this.channelId = this.payload.channel?.id;
     this.primaryActions = this.payload.actions;
     this.hasMultipleActions = this.primaryActions.length > 1;
   }
@@ -56,11 +63,12 @@ export default class InteractionPayload {
     return this.primaryActions.map(action => action.action_id);
   }
 
-  getActionState(actionId: string): InteractionStateValue {
-    const action = this.primaryActions.find(action => action.action_id = actionId);
-    if (!action) {
-      return {};
+  getActionState(actionIdentifier: string): ActionStates | undefined {
+    for (const blockId in this.payload.state.values) {
+      const desiredStateValue = this.payload.state.values[blockId][actionIdentifier];
+      if (desiredStateValue) {
+        return desiredStateValue;
+      }
     }
-    return this.payload.state.values[action.block_id];
   }
 }

@@ -3,18 +3,27 @@ import { Logger } from 'pino';
 import QueueDataMapper from '../datamappers/QueueDatamapper';
 import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
 import { SlashCommand } from '../lib/slack/messages';
-import { OptionObject, TextObject } from '../lib/slack/compositionObjects';
+import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
 import { Button, RadioButton } from '../lib/slack/elements';
 import { ActionIdentifiers, MessageIdentifiers } from '../common/identifiers';
 import {
-  ActionBlock, DividerBlock, HeaderBlock, SectionBlock, 
+  ActionBlock, DividerBlock, HeaderBlock, SectionBlock,
 } from '../lib/slack/blocks';
-
-import { QueueTypes } from './commands.router';
 
 enum SupportedCommands {
   create = 'create',
   list = 'list',
+}
+
+export enum QueueTypes {
+  directRequest = 'Direct Request',
+  codeReview = 'Code Review',
+  release = 'Release'
+};
+
+export enum QueueOwners {
+  personal = 'user',
+  channel = 'channel'
 }
 
 export default class CommandsController {
@@ -28,25 +37,34 @@ export default class CommandsController {
   }
 
   selectQueueTypeMessage(): SlackMessagePayload {
-    const header = new HeaderBlock(new TextObject('Select queue type'));
+    const header = new HeaderBlock(new TextObject('Create a new Queue!'));
+
+    const selectOwnerSection = new SectionBlock(
+      new MarkdownTextObject('*Is this a personal queue or for the current channel?*'),
+    );
+    selectOwnerSection.addAccessory(this.createSelectQueueOwnerMenu());
+
+    const selectQueueTypeSection = new SectionBlock(
+      new MarkdownTextObject('*What type of queue would you like to create?*'),
+    );
+    selectQueueTypeSection.addAccessory(this.createSelectQueueTypeMenu());
+
     const submitButton = new Button(new TextObject('Submit'), ActionIdentifiers.submitQueueType);
-    const selectQueueRadioMenu = new RadioButton(ActionIdentifiers.selectQueueType);
-    (Object.keys(QueueTypes) as Array<keyof typeof QueueTypes>).forEach(queueType => {
-      const queueText = new TextObject(QueueTypes[queueType]);
-      selectQueueRadioMenu.addOption(new OptionObject(queueText, queueText.text));
-    });
+
     const actionsBlock = new ActionBlock([
-      selectQueueRadioMenu,
       submitButton,
     ]);
+
     const blocks = [
       header,
       new DividerBlock(),
+      selectOwnerSection,
+      selectQueueTypeSection,
       actionsBlock,
     ];
     const messagePayload = new MessagePayload(MessageIdentifiers.selectQueueMessage, blocks);
     this.logger.info({ messagePayload }, 'Successfully created select queue type slack message payload');
-    return messagePayload.render(); 
+    return messagePayload.render();
   }
 
   async listQueuesMessage(): Promise<SlackMessagePayload> {
@@ -77,7 +95,29 @@ export default class CommandsController {
       return await this.listQueuesMessage();
     } else {
       this.logger.warn({ action: this.action }, 'Unexpected action type');
-      return this.unexpectedActionMessage(this.action) ;
+      return this.unexpectedActionMessage(this.action);
     }
+  }
+
+  private createSelectQueueTypeMenu(): RadioButton {
+    const selectQueueTypeMenu = new RadioButton(ActionIdentifiers.selectQueueType);
+    (Object.keys(QueueTypes) as Array<keyof typeof QueueTypes>).forEach(queueType => {
+      const queueText = new TextObject(QueueTypes[queueType]);
+      selectQueueTypeMenu.addOption(new OptionObject(queueText, queueText.text));
+    });
+    return selectQueueTypeMenu;
+  }
+
+  private createSelectQueueOwnerMenu(): RadioButton {
+    const selectQueueOwnerMenu = new RadioButton(ActionIdentifiers.selectQueueOwner);
+    selectQueueOwnerMenu.addOption(new OptionObject(
+      new TextObject('Personal Queue') ,
+      QueueOwners.personal,
+    ));
+    selectQueueOwnerMenu.addOption(new OptionObject(
+      new TextObject('Channel Queue') ,
+      QueueOwners.channel,
+    ));
+    return selectQueueOwnerMenu;
   }
 }

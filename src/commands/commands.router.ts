@@ -6,12 +6,6 @@ import CommandsController from './commands.controller';
 
 const router = Router();
 
-export enum QueueTypes {
-  directRequest = 'Direct Request',
-  codeReview = 'Code Review',
-  release = 'Release'
-};
-
 router.post('/commands', async (req, res, next) => {
   try {
     const { body, log: logger } = req;

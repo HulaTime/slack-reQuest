@@ -13,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
       .alter();
 
-    table.unique(['name']);
+    table.unique(['name', 'user_id'], { indexName: 'unique_queue_name_user_id_index' });
 
     table.timestamp('created_at', { useTz: true }).defaultTo(knex.fn.now())
       .alter();
@@ -26,6 +26,8 @@ export async function down(knex: Knex): Promise<void> {
       .alter();
     table.string('user_id').nullable()
       .alter();
+
+    table.dropUnique(['name', 'user_id'], 'unique_queue_name_user_id_index');
 
     table.timestamp('created_at', { useTz: true }).defaultTo(null)
       .alter();

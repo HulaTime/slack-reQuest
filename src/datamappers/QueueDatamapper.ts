@@ -9,16 +9,23 @@ export interface Queue {
   id: string;
   name: string;
   userId: string;
+  type: 'user' | 'channel';
+  channelId?: string;
   createdAt: Date;
 }
 
-type QueueInsert = {
+export type QueueInsert = {
   name: string;
   userId: string;
+  type: 'user' | 'channel';
+  channelId?: string;
 }
 
-
-type DbQueue = Omit<Queue, 'userId' | 'createdAt'> & { user_id: string; created_at?: Date }
+type DbQueue = Omit<Queue, 'userId' | 'createdAt' | 'channelId'> & {
+  user_id: string;
+  channel_id: string;
+  created_at?: Date; 
+}
 type CompleteDbQueue = Required<DbQueue>
 
 export default class QueueDataMapper {
@@ -37,6 +44,8 @@ export default class QueueDataMapper {
           id: randomUUID(),
           name: queue.name,
           user_id: queue.userId,
+          type: queue.type,
+          channel_id: queue.channelId,
         })
         .returning('*');
 

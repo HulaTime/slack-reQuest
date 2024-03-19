@@ -1,4 +1,5 @@
 import { SlackTextObject, ITextObject } from '../compositionObjects/TextObject';
+import { Elements } from '../elements';
 
 import Block from './Block';
 
@@ -6,6 +7,7 @@ export type SlackSectionBlock = {
   type: string;
   text: SlackTextObject;
   block_id: string;
+  accessory?: Record<string, unknown>;
 }
 
 export default class SectionBlock extends Block<SlackSectionBlock> {
@@ -17,11 +19,15 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
   */
   fields?: Array<ITextObject>;
 
-  accessory?: Record<string, unknown>;
+  accessory?: Elements;
 
   constructor(text: ITextObject) {
     super('section');
     this.text = text;
+  }
+
+  addAccessory(element: Elements): void {
+    this.accessory = element;
   }
 
   render(): SlackSectionBlock {
@@ -29,6 +35,7 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
       type: this.type,
       block_id: this.blockId,
       text: this.text.render(),
+      accessory: this.accessory?.render(),
     };
   }
 };

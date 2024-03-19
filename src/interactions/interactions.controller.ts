@@ -3,7 +3,7 @@ import { Logger } from 'pino';
 
 import InteractionPayload, { RadioButtonActionState } from '../lib/slack/messages/InteractionPayload';
 import { ActionIdentifiers } from '../common/identifiers';
-import QueueDataMapper from '../datamappers/QueueDatamapper';
+import QueueDataMapper, { QueueInsert } from '../datamappers/QueueDatamapper';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -12,6 +12,7 @@ export default class InteractionsController {
 
   constructor(req: Request, logger: Logger) {
     this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload));
+    console.log('---------- this.interactionPayload ----------', JSON.stringify(this.interactionPayload, null, 2));
     this.logger = logger;
   }
 
@@ -24,14 +25,29 @@ export default class InteractionsController {
     switch (actionId) {
       case ActionIdentifiers.submitQueueType: {
         this.logger.info('Handling submission of a queue type');
-        const state = this.interactionPayload.getActionState(actionId);
-        const radioButtonState = state[ActionIdentifiers.selectQueueType] as RadioButtonActionState;
-        const queueName = radioButtonState.selected_option.value;
+        const selectQueueTypeState = this.interactionPayload
+          .getActionState(ActionIdentifiers.selectQueueType) as RadioButtonActionState;
+        const selectQueueOwnerState = this.interactionPayload
+          .getActionState(ActionIdentifiers.selectQueueOwner) as RadioButtonActionState;
+
+        if (!selectQueueTypeState || !selectQueueOwnerState) {
+          this.logger.error({ selectQueueTypeState, selectQueueOwnerState }, 'Could not identify required state values for queue creation');
+          throw new Error('No identifiable queue state or owner');
+        }
+
+        const queueName = selectQueueTypeState.selected_option.value;
+        const queueOwner = selectQueueOwnerState.selected_option.value;
+
         const queueDataMapper = new QueueDataMapper(this.logger);
-        await queueDataMapper.create({
+        const queueData: QueueInsert = {
           name: queueName,
           userId: this.interactionPayload.userId,
-        });
+          type: queueOwner === 'user' ? 'user' : 'channel',
+        };
+        if (queueOwner === 'channel') {
+          queueData.channelId = this.interactionPayload.channelId; 
+        }
+        await queueDataMapper.create(queueData);
         return;
       }
       default: {
