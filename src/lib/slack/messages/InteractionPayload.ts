@@ -16,7 +16,7 @@ export type RadioButtonActionState = {
 type ActionStates = RadioButtonActionState | Record<string, unknown>;;
 
 type InteractionStateValue = {
-  [actionId: string]: ActionStates; 
+  [actionId: string]: ActionStates;
 }
 
 export interface SlackInteractionPayload {
@@ -37,6 +37,13 @@ export interface SlackInteractionPayload {
       [block_id: string]: InteractionStateValue;
     };
   };
+  container: {
+    type: string;
+    message_ts: string;
+    channel_id: string;
+    is_ephemeral: boolean;
+  };
+  response_url: string;
 }
 
 export default class InteractionPayload {
@@ -44,15 +51,21 @@ export default class InteractionPayload {
 
   channelId?: string;
 
+  timestamp: string;
+
   primaryActions: SlackIteractionAction[];
 
   hasMultipleActions: boolean;
 
+  responseUrl: string;
+
   constructor(private readonly payload: SlackInteractionPayload) {
     this.userId = this.payload.user.id;
     this.channelId = this.payload.channel?.id;
+    this.timestamp = this.payload.container.message_ts;
     this.primaryActions = this.payload.actions;
     this.hasMultipleActions = this.primaryActions.length > 1;
+    this.responseUrl = this.payload.response_url;
   }
 
   getActionId(): string {

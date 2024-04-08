@@ -25,6 +25,8 @@ export default class SlashCommand {
 
   userId: string;
 
+  channelId: string;
+
   constructor(private payload: SlackSlashCommandPayload, private readonly logger: Logger) {
     const isValid = this.isValidSlackSlashCommandPayload(payload);
     if (!isValid) {
@@ -36,6 +38,7 @@ export default class SlashCommand {
     this.action = actionArgs.action;
     this.args = actionArgs.args;
     this.userId = payload.user_id;
+    this.channelId = payload.channel_id;
   }
 
   getCommand(): string {

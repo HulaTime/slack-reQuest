@@ -1,11 +1,14 @@
 export enum ActionIdentifiers {
-  selectQueueType = 'select-queue-type',
-  selectQueueOwner = 'select-queue-owner',
-  submitQueueType = 'submit-queue-type',
+  selectQueueOwnershipType = 'select-queue-ownership-type',
+  proceedFromOwnershipType = 'proceed-from-ownership-selection',
+  selectQueueRequestType = 'select-queue-request-type',
+  proceedFromRequestType = 'proceed-from-request-selection',
+  cancelInteraction = 'cancel-interaction',
 }
 
 export enum MessageIdentifiers {
-  selectQueueMessage = 'select-queue-message',
-  listQueueMessage = 'list-queue-message',
+  selectQueueOwnershipType = 'select-queue-ownership-type-message',
+  selectQueueRequestType = 'select-queue-request-type-message',
+  listQueueMsg = 'list-queue-message',
 }
 

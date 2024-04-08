@@ -61,4 +61,8 @@ describe('POST /commands "create"', () => {
     const { body } = await userRequest.sendCommand('slackq', 'create');
     expect(body).toEqual(selectQueueSlackRadioButtons);
   });
+
+  describe('Creating personal queues', () => {
+    
+  })
 });
