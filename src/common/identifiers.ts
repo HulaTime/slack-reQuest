@@ -1,14 +1,25 @@
+export enum DefaultQueueTypes {
+  codeReview = 'code-review',
+  release = 'release'
+}
+
+export enum BlockIdentifiers {
+  selectQueueSection = 'select-queue-section',
+  selectQueueMenu = 'select-queue-menu',
+  selectQueueAction = 'select-queue-action',
+}
+
 export enum ActionIdentifiers {
-  selectQueueOwnershipType = 'select-queue-ownership-type',
-  proceedFromOwnershipType = 'proceed-from-ownership-selection',
-  selectQueueRequestType = 'select-queue-request-type',
-  proceedFromRequestType = 'proceed-from-request-selection',
+  selectQueueType = 'select-queue-type',
   cancelInteraction = 'cancel-interaction',
 }
 
 export enum MessageIdentifiers {
   selectQueueOwnershipType = 'select-queue-ownership-type-message',
   selectQueueRequestType = 'select-queue-request-type-message',
-  listQueueMsg = 'list-queue-message',
+  
+  cancelInteraction = 'cancel-interaction-message',
+  listQueuesResponse = 'list-queues-response-message',
+  selectQueueToView = 'view-queue-message',
 }
 

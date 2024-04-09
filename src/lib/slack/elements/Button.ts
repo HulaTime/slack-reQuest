@@ -25,14 +25,12 @@ export default class Button {
 
   style?: ButtonStyles;
   
-  constructor(text: ITextObject, actionId: string = randomUUID()) {
+  constructor(text: ITextObject, style: ButtonStyles | 'none', actionId: string = randomUUID()) {
     this.text = text;
     this.actionId = actionId;
-  }
-
-  setStyle(style: ButtonStyles): Button {
-    this.style = style;
-    return this;
+    if (style !== 'none') {
+      this.style = style;
+    }
   }
 
   render(): SlackButton {

@@ -21,13 +21,14 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
 
   accessory?: Elements;
 
-  constructor(text: ITextObject) {
-    super('section');
+  constructor(text: ITextObject, blockId: string) {
+    super('section', blockId);
     this.text = text;
   }
 
-  addAccessory(element: Elements): void {
+  addAccessory(element: Elements): this {
     this.accessory = element;
+    return this;
   }
 
   render(): SlackSectionBlock {

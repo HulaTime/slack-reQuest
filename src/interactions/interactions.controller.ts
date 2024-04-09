@@ -1,20 +1,10 @@
 import { Request } from 'express';
 import { Logger } from 'pino';
 
-import InteractionPayload, { RadioButtonActionState } from '../lib/slack/messages/InteractionPayload';
-import { ActionIdentifiers, MessageIdentifiers } from '../common/identifiers';
+import { ActionIdentifiers, BlockIdentifiers, MessageIdentifiers } from '../common/identifiers';
 import QueueDataMapper, { QueueInsert } from '../datamappers/QueueDatamapper';
-import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
-import ResponseMessage from '../lib/slack/messages/ResponseMessage';
-import { ActionBlock, SectionBlock } from '../lib/slack/blocks';
-import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
-import { Button, RadioButton } from '../lib/slack/elements';
-import CancelInteractionResponseMessage from '../lib/slack/messages/CancelInteractionResponseMessage';
-
-export enum QueueTypes {
-  codeReview = 'code-review',
-  release = 'release'
-};
+import { InteractionPayload, MessagePayload } from '../lib/slack/messagePayloads';
+import HttpReq from '../lib/utils/HttpReq';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -22,91 +12,40 @@ export default class InteractionsController {
   private readonly logger: Logger;
 
   constructor(req: Request, logger: Logger) {
-    this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload));
+    this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload), logger);
     console.log('---------- this.interactionPayload ----------', JSON.stringify(this.interactionPayload, null, 2));
     this.logger = logger;
   }
 
 
-  createResponseMsg(): ResponseMessage {
-    const radioButtons = new RadioButton(ActionIdentifiers.selectQueueRequestType);
-    radioButtons.addOption(new OptionObject(
-      new TextObject('Code Review'),
-      QueueTypes.codeReview,
-    ));
-    radioButtons.addOption(new OptionObject(
-      new TextObject('Release'),
-      QueueTypes.release,
-    ));
-    const selectQueueTypeSection = new SectionBlock(
-      new MarkdownTextObject('*What type of requests should be managed by this queue?*'),
-    );
-    selectQueueTypeSection.addAccessory(radioButtons);
-
-    const nextButton = new Button(new TextObject('Next'), ActionIdentifiers.proceedFromRequestType);
-    const cancelButton = new Button(new TextObject('Cancel'), ActionIdentifiers.cancelInteraction);
-    nextButton.setStyle('primary');
-    cancelButton.setStyle('danger');
-
-    const buttonActions = new ActionBlock([
-      nextButton,
-      cancelButton,
-    ]);
-
-    const messageBlocks = [
-      selectQueueTypeSection,
-      buttonActions,
-    ];
-
-    return new ResponseMessage(MessageIdentifiers.selectQueueRequestType, messageBlocks);
-  }
-
-
-  async execute(): Promise<SlackMessagePayload | void> {
+  async execute(): Promise<void> {
     if (this.interactionPayload.hasMultipleActions) {
       this.logger.warn('Interaction payloads with multiple primary actions are not yet supported');
     }
     const actionId = this.interactionPayload.getActionId();
     switch (actionId) {
       case ActionIdentifiers.cancelInteraction: {
-        const messagePayload = new CancelInteractionResponseMessage();
-        const result = await fetch(this.interactionPayload.responseUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(messagePayload.render()),
-        });
-        const parsedResult = await result.json();
-        this.logger.info({ parsedResult, actionId }, 'Successfully sent a cancelled response message to the interactive message');
+        const messagePayload = new MessagePayload(MessageIdentifiers.cancelInteraction, [])
+          .shouldDeleteOriginal(true)
+          .setNoContent();
+
+        const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+        httpReq.setBody(messagePayload.render());
+        await httpReq.post();
 
         return;
       }
-      case ActionIdentifiers.proceedFromOwnershipType: {
-        const responseMsg = this.createResponseMsg();
-        responseMsg
-          .setResponseType('ephemeral')
-          .shouldReplaceOriginal(true);
-        const result = await fetch(this.interactionPayload.responseUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(responseMsg.render()),
-        });
-        const parsedResult = await result.json();
-        this.logger.info({ parsedResult, actionId }, 'Successfully sent a response message to the interactive message');
-
-        return;
-      }
-
-      case ActionIdentifiers.proceedFromRequestType: {
+      case ActionIdentifiers.selectQueueType: {
         this.logger.info('Handling submission of a queue type');
-        const queueRequestTypeState = this.interactionPayload
-          .getActionState(ActionIdentifiers.selectQueueRequestType) as RadioButtonActionState;
+        const radioButtonActionState = this.interactionPayload
+          .getRadioButtonState(BlockIdentifiers.selectQueueAction, BlockIdentifiers.selectQueueMenu);
 
-        if (!queueRequestTypeState) {
-          this.logger.error({ queueRequestType: queueRequestTypeState }, 'Could not identify required state values for queue creation');
+        if (!radioButtonActionState) {
+          this.logger.error({ queueRequestType: radioButtonActionState }, 'Could not identify required state values for queue creation');
           throw new Error('No identifiable queue state or owner');
         }
 
-        const queueName = queueRequestTypeState.selected_option.value;
+        const { selected_option: { value: queueName } } = radioButtonActionState;
 
         const queueDataMapper = new QueueDataMapper(this.logger);
         const queueData: QueueInsert = {
@@ -116,11 +55,14 @@ export default class InteractionsController {
           channelId: this.interactionPayload.channelId,
         };
         await queueDataMapper.create(queueData);
-        const responseMsg = new ResponseMessage(`Successfully created the new queue "${queueName}"`, []);
+        const msgPayload = new MessagePayload(`Successfully created the new queue "${queueName}"`, [])
+          .shouldReplaceOriginal('true')
+          .setResponseType('ephemeral');
+
         const result = await fetch(this.interactionPayload.responseUrl, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(responseMsg.shouldReplaceOriginal(true).render()),
+          body: JSON.stringify(msgPayload.render()),
         });
         const parsedResult = await result.json();
         this.logger.info({ parsedResult, actionId, queueData }, 'Successfully responded after creating a new queue');

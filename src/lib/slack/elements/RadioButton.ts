@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { OptionObject } from '../compositionObjects';
 import ConfirmationDialogueObject, { SlackConfirmationDialogue } from '../compositionObjects/ConfirmationDialogObject';
 import { SlackOption } from '../compositionObjects/OptionObject';
@@ -30,23 +32,29 @@ export default class RadioButton {
   */
   focusOnLoad?: boolean;
 
-  constructor(actionId: string, confirmationDialogue?: ConfirmationDialogueObject) {
-    this.actionId = actionId;
-    this.confirm = confirmationDialogue;
+  constructor(actionId?: string) {
+    this.actionId = actionId ?? randomUUID();
   }
 
-  addOption(option: OptionObject): void {
+  addOption(option: OptionObject): this {
     if (this.options.length >= this.maxOptions) {
       throw new Error(`Cannot add more than ${this.maxOptions} options to Radio Button`);
     }
     this.options.push(option);
+    return this;
   }
 
-  setInitialOption(option: OptionObject): void {
+  addConfirmationDialogue(confirmationDialogue: ConfirmationDialogueObject): this {
+    this.confirm = confirmationDialogue;
+    return this;
+  }
+
+  setInitialOption(option: OptionObject): this {
     if (!this.options.includes(option)) {
       throw new Error('Initial option must exist in the assigned options');
     }
     this.initialOption = option;
+    return this;
   }
 
   render(): SlackRadioButton {
