@@ -95,31 +95,36 @@ export default class InteractionsController {
 
         return;
       }
-      case 'void': {
+
+      case ActionIdentifiers.proceedFromRequestType: {
         this.logger.info('Handling submission of a queue type');
-        const selectQueueTypeState = this.interactionPayload
-          .getActionState(ActionIdentifiers.selectQueueOwnershipType) as RadioButtonActionState;
-        const selectQueueOwnerState = this.interactionPayload
+        const queueRequestTypeState = this.interactionPayload
           .getActionState(ActionIdentifiers.selectQueueRequestType) as RadioButtonActionState;
 
-        if (!selectQueueTypeState || !selectQueueOwnerState) {
-          this.logger.error({ selectQueueTypeState, selectQueueOwnerState }, 'Could not identify required state values for queue creation');
+        if (!queueRequestTypeState) {
+          this.logger.error({ queueRequestType: queueRequestTypeState }, 'Could not identify required state values for queue creation');
           throw new Error('No identifiable queue state or owner');
         }
 
-        const queueName = selectQueueTypeState.selected_option.value;
-        const queueOwner = selectQueueOwnerState.selected_option.value;
+        const queueName = queueRequestTypeState.selected_option.value;
 
         const queueDataMapper = new QueueDataMapper(this.logger);
         const queueData: QueueInsert = {
           name: queueName,
           userId: this.interactionPayload.userId,
-          type: queueOwner === 'user' ? 'user' : 'channel',
+          type: 'channel',
+          channelId: this.interactionPayload.channelId,
         };
-        if (queueOwner === 'channel') {
-          queueData.channelId = this.interactionPayload.channelId;
-        }
         await queueDataMapper.create(queueData);
+        const responseMsg = new ResponseMessage(`Successfully created the new queue "${queueName}"`, []);
+        const result = await fetch(this.interactionPayload.responseUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(responseMsg.shouldReplaceOriginal(true).render()),
+        });
+        const parsedResult = await result.json();
+        this.logger.info({ parsedResult, actionId, queueData }, 'Successfully responded after creating a new queue');
+
         return;
       }
       default: {
