@@ -15,8 +15,6 @@ export type RadioButtonActionState = {
   };
 }
 
-type ActionStates = RadioButtonActionState | Record<string, unknown>;;
-
 export interface SlackInteractionPayload {
   type: string;
   user: {

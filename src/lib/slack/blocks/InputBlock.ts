@@ -36,8 +36,8 @@ export default class InputBlock extends Block<SlackInputBlock> {
   */
   optional?: boolean = false;
 
-  constructor(label: TextObject, element: RadioButton, hint?: TextObject) {
-    super('input');
+  constructor(blockId: string, label: TextObject, element: RadioButton, hint?: TextObject) {
+    super('input', blockId);
     this.label = label;
     this.element = element;
     this.hint = hint;

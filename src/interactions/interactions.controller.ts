@@ -13,10 +13,8 @@ export default class InteractionsController {
 
   constructor(req: Request, logger: Logger) {
     this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload), logger);
-    console.log('---------- this.interactionPayload ----------', JSON.stringify(this.interactionPayload, null, 2));
     this.logger = logger;
   }
-
 
   async execute(): Promise<void> {
     if (this.interactionPayload.hasMultipleActions) {
@@ -59,13 +57,9 @@ export default class InteractionsController {
           .shouldReplaceOriginal('true')
           .setResponseType('ephemeral');
 
-        const result = await fetch(this.interactionPayload.responseUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(msgPayload.render()),
-        });
-        const parsedResult = await result.json();
-        this.logger.info({ parsedResult, actionId, queueData }, 'Successfully responded after creating a new queue');
+        const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+        httpReq.setBody(msgPayload.render());
+        await httpReq.post();
 
         return;
       }

@@ -25,6 +25,8 @@ export default class SlashCommand {
 
   userId: string;
 
+  userName: string;
+
   channelId: string;
 
   constructor(private payload: SlackSlashCommandPayload, private readonly logger: Logger) {
@@ -38,6 +40,7 @@ export default class SlashCommand {
     this.action = actionArgs.action;
     this.args = actionArgs.args;
     this.userId = payload.user_id;
+    this.userName = payload.user_name;
     this.channelId = payload.channel_id;
   }
 

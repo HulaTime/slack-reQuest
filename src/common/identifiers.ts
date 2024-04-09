@@ -1,3 +1,8 @@
+export enum SupportedSlashCommands {
+  createQueue = 'create',
+  listQueues = 'list',
+}
+
 export enum DefaultQueueTypes {
   codeReview = 'code-review',
   release = 'release'
@@ -7,11 +12,17 @@ export enum BlockIdentifiers {
   selectQueueSection = 'select-queue-section',
   selectQueueMenu = 'select-queue-menu',
   selectQueueAction = 'select-queue-action',
+
+  listedQueueSection = 'listed-queue-section',
 }
 
 export enum ActionIdentifiers {
   selectQueueType = 'select-queue-type',
   cancelInteraction = 'cancel-interaction',
+  viewQueueAction = 'view-queue-action',
+  viewQueueRequests = 'view-queue-requests',
+  addQueueRequest = 'add-queue-request',
+  deleteQueue = 'delete-queue',
 }
 
 export enum MessageIdentifiers {

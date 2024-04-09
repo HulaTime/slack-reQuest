@@ -1,9 +1,9 @@
 import { Logger } from 'pino';
 
-import QueueDataMapper from '../datamappers/QueueDatamapper';
+import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
 import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
 import {
-  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, 
+  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, SupportedSlashCommands,
 } from '../common/identifiers';
 import {
   ActionBlock, DividerBlock, HeaderBlock, SectionBlock,
@@ -12,21 +12,26 @@ import { Button, RadioButton } from '../lib/slack/elements';
 import { MessagePayload } from '../lib/slack/messagePayloads';
 import { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
 import { SlashCommand } from '../lib/slack/slashCommands';
-
-enum SupportedCommands {
-  create = 'create',
-  list = 'list',
-  view = 'view',
-}
+import { emojis, randomCircleEmoji } from '../common/emojis';
+import Block from '../lib/slack/blocks/Block';
 
 export default class CommandsController {
+  private readonly logger: Logger;
+
+  private readonly slashCommand: SlashCommand;
+
   private readonly action: string;
 
+  private readonly queueDataMapper: QueueDataMapper;
+
   constructor(
-    private readonly slashCommand: SlashCommand,
-    private readonly logger: Logger,
+    slashCommand: SlashCommand,
+    logger: Logger,
   ) {
+    this.logger = logger;
+    this.slashCommand = slashCommand;
     this.action = this.slashCommand.action;
+    this.queueDataMapper = new QueueDataMapper(logger);
   }
 
   unexpectedActionMessage(action: string): SlackMessagePayload {
@@ -35,8 +40,7 @@ export default class CommandsController {
   }
 
   async execute(): Promise<SlackMessagePayload> {
-    if (this.action === SupportedCommands.create) {
-      const headerBlock = new HeaderBlock(new TextObject('Create a new Queue!'));
+    if (this.action === SupportedSlashCommands.createQueue) {
       const radioButtons = new RadioButton(BlockIdentifiers.selectQueueMenu)
         .addOption(new OptionObject(
           new TextObject('Code Review'),
@@ -48,8 +52,8 @@ export default class CommandsController {
         ));
 
       const sectionBlock = new SectionBlock(
+        BlockIdentifiers.selectQueueSection,
         new MarkdownTextObject('*What type of requests should be managed by this queue?*'),
-        BlockIdentifiers.selectQueueSection, 
       );
 
       const createButton = new Button(new TextObject('Create'), 'primary', ActionIdentifiers.selectQueueType);
@@ -62,7 +66,6 @@ export default class CommandsController {
       ]);
 
       const messageBlocks = [
-        headerBlock,
         sectionBlock,
         actionBlock,
       ];
@@ -72,49 +75,60 @@ export default class CommandsController {
         .shouldReplaceOriginal('true');
 
       return msgPayload.render();
-    } else if (this.action === SupportedCommands.list) {
-      const queueDataMapper = new QueueDataMapper(this.logger);
-      const queues = await queueDataMapper.list({ userId: this.slashCommand.userId });
+    } else if (this.action === SupportedSlashCommands.listQueues) {
+      const queues = await this.queueDataMapper.list({ userId: this.slashCommand.userId });
+      const existingPersonalQueue = queues.find(q => q.type === 'user');
 
-      const headerBlock = new HeaderBlock(new TextObject('My Queues'));
-      const blocks = [
+      if (!existingPersonalQueue) {
+        const personalQueue = await this.createUserQueue();
+        if (personalQueue) {
+          queues.unshift(personalQueue);
+        }
+      }
+
+      const headerBlock = new HeaderBlock(new TextObject('Available Queues'));
+      const blocks: Block[] = [
         headerBlock,
-        new DividerBlock(),
       ];
       queues.forEach(queue => {
-        blocks.push(new SectionBlock(
-          new TextObject(queue.name),
-          'temp',
-        ));
+        const prefix = queue.type === 'user' ? emojis.crown : randomCircleEmoji(); 
+        const queueSection = new SectionBlock(
+          `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
+          new MarkdownTextObject(`${prefix} ${queue.name}`),
+        );
+        const actionBlock = new ActionBlock(
+          `${ActionIdentifiers.viewQueueAction}:${queue.id}`, [
+            new Button(new TextObject('View requests'), 'primary', ActionIdentifiers.viewQueueRequests),
+            new Button(new TextObject('Add request'), 'primary', ActionIdentifiers.addQueueRequest),
+            new Button(new TextObject('Delete!'), 'danger', ActionIdentifiers.deleteQueue),
+          ]);
+
+        blocks.push(new DividerBlock());
+        blocks.push(queueSection);
+        blocks.push(actionBlock);
       });
 
       const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
       this.logger.info({ messagePayload }, 'Successfully created list queues slack message payload');
 
       return messagePayload.render();
-    } else if (this.action === SupportedCommands.view) {
-      const myQueueButton = new Button(new TextObject('My Queue'), 'none', 'view-my-queue');
-      const channelQueueButton = new Button(new TextObject('Channel Queue'), 'none', 'view-channel-queue');
-      const cancelButton = new Button(new TextObject('Cancel'), 'danger', ActionIdentifiers.cancelInteraction);
-
-      const headerBlock = new HeaderBlock(new TextObject('View Requests in a queue'));
-      const sectionBlock = new SectionBlock(
-        new MarkdownTextObject('*Which queue would you like to check?*'),
-        'temp2',
-      )
-        .addAccessory(myQueueButton)
-        .addAccessory(channelQueueButton)
-        .addAccessory(cancelButton);
-
-      const messagePayload = new MessagePayload(
-        MessageIdentifiers.selectQueueToView,
-        [headerBlock, sectionBlock],
-      );
-
-      return messagePayload.render();
     } else {
       this.logger.warn({ action: this.action }, 'Unexpected action type');
       return this.unexpectedActionMessage(this.action);
+    }
+  }
+
+  private async createUserQueue(): Promise<Queue | undefined> {
+    try {
+      this.logger.debug('Attempting to create a new personal user queue');
+
+      return await this.queueDataMapper.create({
+        name: 'My Personal Queue',
+        userId: this.slashCommand.userId,
+        type: 'user',
+      });
+    } catch (err) {
+      this.logger.error({ err }, 'Failed to create a user queue');
     }
   }
 }

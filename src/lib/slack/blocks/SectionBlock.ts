@@ -21,7 +21,7 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
 
   accessory?: Elements;
 
-  constructor(text: ITextObject, blockId: string) {
+  constructor(blockId: string, text: ITextObject) {
     super('section', blockId);
     this.text = text;
   }
