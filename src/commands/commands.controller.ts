@@ -4,13 +4,17 @@ import QueueDataMapper from '../datamappers/QueueDatamapper';
 import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
 import { SlashCommand } from '../lib/slack/messages';
 import { TextObject } from '../lib/slack/compositionObjects';
-import { MessageIdentifiers } from '../common/identifiers';
-import { DividerBlock, HeaderBlock, SectionBlock } from '../lib/slack/blocks';
+import { ActionIdentifiers, MessageIdentifiers } from '../common/identifiers';
+import {
+  ActionBlock, DividerBlock, HeaderBlock, SectionBlock, 
+} from '../lib/slack/blocks';
 import SelectQueueOwnershipTypeMsg from '../lib/slack/messages/SelectQueueOwnershipTypeMsg';
+import { Button } from '../lib/slack/elements';
 
 enum SupportedCommands {
   create = 'create',
   list = 'list',
+  view = 'view',
 }
 
 export default class CommandsController {
@@ -50,6 +54,15 @@ export default class CommandsController {
       return selectQueueTypeMsg.render();
     } else if (this.action === SupportedCommands.list) {
       return await this.listQueuesMessage();
+    } else if (this.action === SupportedCommands.view) {
+      const header = new HeaderBlock(new TextObject('Which Queue would you like to view?'));
+      const myQueue = new Button(new TextObject('My Queue'), 'view-my-queue');
+      const channelQueue = new Button(new TextObject('Channel Queue'), 'view-channel-queue');
+      const cancelButton = new Button(new TextObject('Cancel'), ActionIdentifiers.cancelInteraction);
+      cancelButton.setStyle('danger');
+      const actionBlock = new ActionBlock([myQueue, channelQueue, cancelButton]);
+      const messagePayload = new MessagePayload('', [header, actionBlock]);
+      return messagePayload.render();
     } else {
       this.logger.warn({ action: this.action }, 'Unexpected action type');
       return this.unexpectedActionMessage(this.action);

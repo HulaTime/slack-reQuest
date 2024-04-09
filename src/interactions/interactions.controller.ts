@@ -4,11 +4,12 @@ import { Logger } from 'pino';
 import InteractionPayload, { RadioButtonActionState } from '../lib/slack/messages/InteractionPayload';
 import { ActionIdentifiers, MessageIdentifiers } from '../common/identifiers';
 import QueueDataMapper, { QueueInsert } from '../datamappers/QueueDatamapper';
-import { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
+import MessagePayload, { SlackMessagePayload } from '../lib/slack/messages/MessagePayload';
 import ResponseMessage from '../lib/slack/messages/ResponseMessage';
 import { ActionBlock, SectionBlock } from '../lib/slack/blocks';
 import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
 import { Button, RadioButton } from '../lib/slack/elements';
+import CancelInteractionResponseMessage from '../lib/slack/messages/CancelInteractionResponseMessage';
 
 export enum QueueTypes {
   codeReview = 'code-review',
@@ -67,6 +68,18 @@ export default class InteractionsController {
     }
     const actionId = this.interactionPayload.getActionId();
     switch (actionId) {
+      case ActionIdentifiers.cancelInteraction: {
+        const messagePayload = new CancelInteractionResponseMessage();
+        const result = await fetch(this.interactionPayload.responseUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(messagePayload.render()),
+        });
+        const parsedResult = await result.json();
+        this.logger.info({ parsedResult, actionId }, 'Successfully sent a cancelled response message to the interactive message');
+
+        return;
+      }
       case ActionIdentifiers.proceedFromOwnershipType: {
         const responseMsg = this.createResponseMsg();
         responseMsg
