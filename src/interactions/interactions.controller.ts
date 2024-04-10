@@ -11,9 +11,12 @@ export default class InteractionsController {
 
   private readonly logger: Logger;
 
+  private readonly queueDataMapper: QueueDataMapper;
+
   constructor(req: Request, logger: Logger) {
     this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload), logger);
     this.logger = logger;
+    this.queueDataMapper = new QueueDataMapper(logger);
   }
 
   async execute(): Promise<void> {
@@ -23,6 +26,8 @@ export default class InteractionsController {
     const actionId = this.interactionPayload.getActionId();
     switch (actionId) {
       case ActionIdentifiers.cancelInteraction: {
+        this.logger.info('Handling a cancel interaction action');
+
         const messagePayload = new MessagePayload(MessageIdentifiers.cancelInteraction, [])
           .shouldDeleteOriginal(true)
           .setNoContent();
@@ -33,8 +38,10 @@ export default class InteractionsController {
 
         return;
       }
+
       case ActionIdentifiers.selectQueueType: {
-        this.logger.info('Handling submission of a queue type');
+        this.logger.info('Handling submission of a select queue type action');
+
         const radioButtonActionState = this.interactionPayload
           .getRadioButtonState(BlockIdentifiers.selectQueueAction, BlockIdentifiers.selectQueueMenu);
 
@@ -45,14 +52,13 @@ export default class InteractionsController {
 
         const { selected_option: { value: queueName } } = radioButtonActionState;
 
-        const queueDataMapper = new QueueDataMapper(this.logger);
         const queueData: QueueInsert = {
           name: queueName,
           userId: this.interactionPayload.userId,
           type: 'channel',
           channelId: this.interactionPayload.channelId,
         };
-        await queueDataMapper.create(queueData);
+        await this.queueDataMapper.create(queueData);
         const msgPayload = new MessagePayload(`Successfully created the new queue "${queueName}"`, [])
           .shouldReplaceOriginal('true')
           .setResponseType('ephemeral');
@@ -63,6 +69,20 @@ export default class InteractionsController {
 
         return;
       }
+
+      case ActionIdentifiers.deleteQueue: {
+        this.logger.info('Handling submission of a delete queue action');
+        
+        const action = this.interactionPayload.getActionById(ActionIdentifiers.deleteQueue);
+        if (!action || !action?.value) {
+          this.logger.error({ action }, 'Action does not have required data values to delete a queue');
+          return;
+        }
+
+        await this.queueDataMapper.delete(action.value);
+        return;
+      }
+
       default: {
         this.logger.warn(
           { actionId },

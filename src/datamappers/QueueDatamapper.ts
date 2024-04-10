@@ -77,4 +77,20 @@ export default class QueueDataMapper {
       return queue.convertToCamel();
     });
   }
+
+  async delete(queueId: string): Promise<void> {
+    try {
+      this.logger.debug({ queueId }, 'Attempting to delete a queue in KnexQueryBuilder');
+      await this.dbConnection('queues')
+        .del()
+        .where('id', queueId);
+
+      this.logger.info({ queueId }, 'Successfully deleted a queue in KnexQueryBuilder');
+
+      return;
+    } catch (err) {
+      this.logger.error({ err, queueId }, 'There was an error while trying t odelete a queue in KnexQueryBuilder');
+      throw err;
+    }
+  }
 }

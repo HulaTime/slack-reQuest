@@ -24,7 +24,9 @@ export default class Button {
   actionId: string;
 
   style?: ButtonStyles;
-  
+
+  value?: string;
+
   constructor(text: ITextObject, style: ButtonStyles | 'none', actionId: string = randomUUID()) {
     this.text = text;
     this.actionId = actionId;
@@ -33,12 +35,18 @@ export default class Button {
     }
   }
 
+  setValue(value: string): this {
+    this.value = value;
+    return this;
+  }
+
   render(): SlackButton {
     return { 
       type: this.type,
       text: this.text.render(),
       style: this.style,
       action_id: this.actionId,
+      value: this.value,
     };
   } 
 }

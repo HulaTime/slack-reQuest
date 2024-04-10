@@ -91,22 +91,29 @@ export default class CommandsController {
         headerBlock,
       ];
       queues.forEach(queue => {
-        const prefix = queue.type === 'user' ? emojis.crown : randomCircleEmoji(); 
+        const prefix = queue.type === 'user' ? emojis.crown : randomCircleEmoji();
         const queueSection = new SectionBlock(
           `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
           new MarkdownTextObject(`${prefix} ${queue.name}`),
         );
+        
+        const viewReqButton = new Button(new TextObject('View requests'), 'primary', ActionIdentifiers.viewQueueRequests)
+          .setValue(queue.id);
+        const addReqButton = new Button(new TextObject('Add request'), 'primary', ActionIdentifiers.addQueueRequest)
+          .setValue(queue.id);
+        const deleteQueueButton = new Button(new TextObject('Delete!'), 'danger', ActionIdentifiers.deleteQueue)
+          .setValue(queue.id);
         const actionBlock = new ActionBlock(
-          `${ActionIdentifiers.viewQueueAction}:${queue.id}`, [
-            new Button(new TextObject('View requests'), 'primary', ActionIdentifiers.viewQueueRequests),
-            new Button(new TextObject('Add request'), 'primary', ActionIdentifiers.addQueueRequest),
-            new Button(new TextObject('Delete!'), 'danger', ActionIdentifiers.deleteQueue),
-          ]);
+          `${ActionIdentifiers.viewQueueAction}:${queue.id}`, 
+          [viewReqButton, addReqButton, deleteQueueButton],
+        );
 
         blocks.push(new DividerBlock());
         blocks.push(queueSection);
         blocks.push(actionBlock);
       });
+
+      blocks.push(new ActionBlock(ActionIdentifiers.cancelInteraction, [new Button(new TextObject('Close'), 'danger', ActionIdentifiers.cancelInteraction)]));
 
       const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
       this.logger.info({ messagePayload }, 'Successfully created list queues slack message payload');

@@ -17,10 +17,12 @@ export enum BlockIdentifiers {
 }
 
 export enum ActionIdentifiers {
-  selectQueueType = 'select-queue-type',
   cancelInteraction = 'cancel-interaction',
+  selectQueueType = 'select-queue-type',
+
   viewQueueAction = 'view-queue-action',
   viewQueueRequests = 'view-queue-requests',
+
   addQueueRequest = 'add-queue-request',
   deleteQueue = 'delete-queue',
 }
