@@ -1,5 +1,5 @@
 import { TextObject, SlackTextObject } from '../compositionObjects/TextObject';
-import { RadioButton } from '../elements';
+import { PlainTextInput, RadioButton } from '../elements';
 
 import Block from './Block';
 
@@ -13,13 +13,15 @@ export type SlackInputBlock = {
   optional?: boolean;
 }
 
+type SupportedInputElements = RadioButton | PlainTextInput;
+
 export default class InputBlock extends Block<SlackInputBlock> {
   /** A label that appears above an input element in the form of a text object that must have type
     * of plain_text. Maximum length for the text in this field is 2000 characters.
   */
   label: TextObject;
 
-  element: RadioButton;
+  element: SupportedInputElements;
 
   /** A boolean that indicates whether or not the use of elements in this block should dispatch a
     * block_actions payload. Defaults to false.
@@ -36,11 +38,20 @@ export default class InputBlock extends Block<SlackInputBlock> {
   */
   optional?: boolean = false;
 
-  constructor(blockId: string, label: TextObject, element: RadioButton, hint?: TextObject) {
+  constructor(blockId: string, label: TextObject, element: SupportedInputElements) {
     super('input', blockId);
     this.label = label;
     this.element = element;
-    this.hint = hint;
+  }
+
+  setHint(textObject: TextObject): this {
+    this.hint = textObject;
+    return this;
+  }
+  
+  isOptional(value: boolean): this {
+    this.optional = value;
+    return this;
   }
 
   render(): SlackInputBlock {

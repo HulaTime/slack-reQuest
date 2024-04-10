@@ -55,7 +55,7 @@ export default class InteractionPayload {
   responseUrl: string;
 
   constructor(private readonly payload: SlackInteractionPayload, private readonly logger: Logger) {
-    console.log('---------- payload: ----------', payload);
+    console.log('---------- payload: ----------', JSON.stringify(payload, null, 4));
     this.userId = this.payload.user.id;
     this.channelId = this.payload.channel?.id;
     this.timestamp = this.payload.container.message_ts;
