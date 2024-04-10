@@ -1,6 +1,7 @@
 type Emojis = {
   circles: Record<string, string>;
   crown: string;
+  exclamation: string;
 };
 
 export const emojis: Emojis = {
@@ -13,6 +14,7 @@ export const emojis: Emojis = {
     purpleCircle: ':large_purple_circle:',
   },
   crown: ':crown:',
+  exclamation: ':exclamation:',
 };
 
 const randomNum = (min: number, max: number): number => {
