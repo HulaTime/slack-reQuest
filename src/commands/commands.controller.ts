@@ -1,14 +1,14 @@
 import { Logger } from 'pino';
 
 import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
-import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
+import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
 import {
-  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, SupportedSlashCommands,
+  ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SupportedSlashCommands,
 } from '../common/identifiers';
 import {
   ActionBlock, DividerBlock, HeaderBlock, SectionBlock,
 } from '../lib/slack/blocks';
-import { Button, RadioButton } from '../lib/slack/elements';
+import { Button } from '../lib/slack/elements';
 import { MessagePayload } from '../lib/slack/messagePayloads';
 import { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
 import { SlashCommand } from '../lib/slack/slashCommands';
