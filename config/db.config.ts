@@ -5,7 +5,7 @@ export const DB_HOST = env.get('DB_HOST')
   .asString();
 
 export const DB_NAME = env.get('DB_NAME')
-  .default('slack-queue')
+  .default('slack-request')
   .asString();
 
 export const DB_USER = env.get('DB_USER')

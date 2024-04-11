@@ -1,10 +1,10 @@
 services:
   db:
     image: postgres:14
-    container_name: slack-queue-db
+    container_name: slack-reQuest-db
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=slack-queue
+      - POSTGRES_DB=slack-request
     ports:
       - 54320:5432
