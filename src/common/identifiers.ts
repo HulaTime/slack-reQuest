@@ -9,29 +9,37 @@ export enum DefaultQueueTypes {
 }
 
 export enum BlockIdentifiers {
-  selectQueueSection = 'select-queue-section',
-  selectQueueMenu = 'select-queue-menu',
-  selectQueueAction = 'select-queue-action',
+  submitQueueHeader = 'submit-queue-header',
+  defaultQueueInput = 'default-queue-input',
+  customQueueInput = 'custom-queue-input',
+  submitQueueButtons = 'submit-queue-buttons',
 
   listedQueueSection = 'listed-queue-section',
 }
 
 export enum ActionIdentifiers {
   cancelInteraction = 'cancel-interaction',
-  selectQueueType = 'select-queue-type',
+
+  defaultQueueSelected = 'default-queue-selected',
+  customInputSelected = 'custom-input-selected',
+
+  queueTypeSelected = 'select-queue-type-action',
 
   viewQueueAction = 'view-queue-action',
-  viewQueueRequests = 'view-queue-requests',
+  viewQueueRequests = 'view-queue-requests-action',
 
-  addQueueRequest = 'add-queue-request',
-  deleteQueue = 'delete-queue',
+  deleteQueue = 'delete-queue-action',
+
+  addQueueRequest = 'add-queue-request-action',
+  submitQueueRequest = 'submit-queue-request-action'
 }
 
 export enum MessageIdentifiers {
+  cancelInteraction = 'cancel-interaction-message',
+
   selectQueueOwnershipType = 'select-queue-ownership-type-message',
   selectQueueRequestType = 'select-queue-request-type-message',
-  
-  cancelInteraction = 'cancel-interaction-message',
+
   listQueuesResponse = 'list-queues-response-message',
   selectQueueToView = 'view-queue-message',
 }

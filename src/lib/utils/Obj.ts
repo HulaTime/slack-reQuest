@@ -1,22 +1,22 @@
 const isAlphanumeric = (str: string): boolean => /^[a-zA-Z0-9]+$/.test(str);
 
-type CamelCase<S extends string> =
+export type CamelCase<S extends string> =
   S extends `${infer P}_${infer Q}${infer R}`
   ? `${P}${Capitalize<Q>}${CamelCase<R>}`
   : S;
 
-type SnakeToCamelCase<T> = {
+export type SnakeToCamelCase<T> = {
   [K in keyof T as CamelCase<K & string>]: T[K]
 };
 
-type SnakeCase<S extends string> = 
+export type SnakeCase<S extends string> = 
   S extends `${infer P1}${infer P2}` 
     ? P2 extends Capitalize<P2> 
       ? `${Lowercase<P1>}_${SnakeCase<Lowercase<P2>>}`
       : `${P1}${SnakeCase<P2>}`
     : S;
 
-type CamelCaseToSnakeCase<T> = {
+export type CamelCaseToSnakeCase<T> = {
   [K in keyof T as SnakeCase<K & string>]: T[K]
 };
 

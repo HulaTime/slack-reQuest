@@ -1,6 +1,7 @@
 import { Logger } from 'pino';
 
 import { SlackTextObject } from '../compositionObjects/TextObject';
+import { ActionIdentifiers, BlockIdentifiers } from '../../../common/identifiers';
 
 export type SlackIteractionAction = {
   block_id: string;
@@ -13,7 +14,22 @@ export type RadioButtonActionState = {
   selected_option: {
     text: SlackTextObject;
     value: string;
-  };
+  } | null;
+}
+
+export type PlainTextInputState = {
+  type: 'plain_text_input';
+  value: string;
+}
+
+export type BlockStateValue = {
+  [blockId: string]: {
+    [actionId: string]: RadioButtonActionState | PlainTextInputState | undefined;
+  } | undefined;
+}
+
+export type InteractionState = {
+  values: BlockStateValue; 
 }
 
 export interface SlackInteractionPayload {
@@ -29,9 +45,7 @@ export interface SlackInteractionPayload {
     name: string;
   };
   actions: SlackIteractionAction[];
-  state: {
-    values: Record<string, unknown>; 
-  };
+  state: InteractionState;
   container: {
     type: string;
     message_ts: string;
@@ -44,6 +58,8 @@ export interface SlackInteractionPayload {
 export default class InteractionPayload {
   userId: string;
 
+  userName: string;
+
   channelId?: string;
 
   timestamp: string;
@@ -54,9 +70,10 @@ export default class InteractionPayload {
 
   responseUrl: string;
 
-  constructor(private readonly payload: SlackInteractionPayload, private readonly logger: Logger) {
+  constructor(readonly payload: SlackInteractionPayload, private readonly logger: Logger) {
     console.log('---------- payload: ----------', JSON.stringify(payload, null, 4));
     this.userId = this.payload.user.id;
+    this.userName = this.payload.user.name;
     this.channelId = this.payload.channel?.id;
     this.timestamp = this.payload.container.message_ts;
     this.primaryActions = this.payload.actions;
@@ -71,7 +88,7 @@ export default class InteractionPayload {
   getActionIds(): string[] {
     return this.primaryActions.map(action => action.action_id);
   }
- 
+
   getActionById(actionId: string): SlackIteractionAction | undefined {
     const action = this.payload.actions.find(a => a.action_id === actionId);
     if (!action) {
@@ -81,43 +98,23 @@ export default class InteractionPayload {
     return action;
   }
 
-  getRadioButtonState(actionBlockId: string, radioMenuBlockId: string): RadioButtonActionState | void {
-    const actionBlockState = this.getBlockState(actionBlockId);
-    if (!actionBlockState) {
-      return;
-    }
-
-    const radioButtonState = actionBlockState[radioMenuBlockId];
-    if (!radioButtonState) {
-      this.logger.error({ actionBlockId, radioMenuBlockId, stateValues: this.payload.state.values }, 'Could not find the radio button state in the action block specified');
-      return undefined;
-    }
-
-    if (typeof radioButtonState !== 'object' || Array.isArray(radioButtonState)) {
-      this.logger.error({ radioButtonState, actionBlockId, radioMenuBlockId }, 'The radio button state was not of the expected type');
-      return undefined;
-    }
-
-    if (!('type' in radioButtonState) || radioButtonState.type !== 'radio_buttons') {
-      this.logger.error({
-        radioButtonState, actionBlockId, radioMenuBlockId, stateValues: this.payload.state.values, 
-      }, 'The state accessed was not a radio button state');
-      return undefined;
-    }
-
-    return radioButtonState as RadioButtonActionState;
-  }
-
-  private getBlockState(blockId: string): Record<string, unknown> | undefined {
+  getBlockActionValue(blockId: BlockIdentifiers, actionId: ActionIdentifiers): string {
     const blockState = this.payload.state.values[blockId];
     if (!blockState) {
-      this.logger.error('Could not find action block state while trying to get a radio button state', { blockId, stateValues: this.payload.state.values });
-      return undefined;
+      this.logger.error('Could not find block state', { blockId, stateValues: this.payload.state.values });
+      return '';
     }
-    if (typeof blockState !== 'object' || Array.isArray(blockState)) {
-      this.logger.error('The action block was not of the expected type when trying to get a radio button state', { blockState, blockId, stateValues: this.payload.state.values });
-      return undefined;
+
+    const actionState = blockState[actionId];
+
+    if (actionState?.type === 'radio_buttons') {
+      return actionState.selected_option?.value ?? '';
     }
-    return blockState as Record<string, unknown>;
+
+    if (actionState?.type === 'plain_text_input') {
+      return actionState.value;
+    }
+
+    return '';
   }
 }

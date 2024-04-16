@@ -5,9 +5,12 @@ import { ActionIdentifiers, BlockIdentifiers, MessageIdentifiers } from '../comm
 import QueueDataMapper, { Queue, QueueInsert } from '../datamappers/QueueDatamapper';
 import { InteractionPayload, MessagePayload } from '../lib/slack/messagePayloads';
 import HttpReq from '../lib/utils/HttpReq';
-import { MarkdownTextObject } from '../lib/slack/compositionObjects';
+import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
 import { emojis } from '../common/emojis';
 import { CreateQueueForm } from '../common/messages';
+import { ActionBlock, InputBlock, SectionBlock } from '../lib/slack/blocks';
+import { Button, PlainTextInput } from '../lib/slack/elements';
+import RequestDataMapper from '../datamappers/RequestDatamapper';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -16,10 +19,13 @@ export default class InteractionsController {
 
   private readonly queueDataMapper: QueueDataMapper;
 
+  private readonly requestDataMapper: RequestDataMapper;
+
   constructor(req: Request, logger: Logger) {
     this.interactionPayload = new InteractionPayload(JSON.parse(req.body.payload), logger);
     this.logger = logger;
     this.queueDataMapper = new QueueDataMapper(logger);
+    this.requestDataMapper = new RequestDataMapper(logger);
   }
 
   async execute(): Promise<void> {
@@ -32,12 +38,20 @@ export default class InteractionsController {
         return await this.handleCancelInteraction();
       }
 
-      case ActionIdentifiers.selectQueueType: {
+      case ActionIdentifiers.queueTypeSelected: {
         return await this.handleQueueTypeSelected();
       }
 
       case ActionIdentifiers.deleteQueue: {
         return await this.handleDeleteQueueInteraction();
+      }
+
+      case ActionIdentifiers.addQueueRequest: {
+        return await this.handleAddQueueRequest();
+      }
+
+      case ActionIdentifiers.submitQueueRequest: {
+        return await this.handleSubmitQueueRequest();
       }
 
       default: {
@@ -64,17 +78,13 @@ export default class InteractionsController {
   private async handleQueueTypeSelected(): Promise<void> {
     this.logger.info('Handling submission of a select queue type action');
 
-    const radioButtonActionState = this.interactionPayload
-      .getRadioButtonState(BlockIdentifiers.selectQueueAction, BlockIdentifiers.selectQueueMenu);
-    console.log('---------- radioButtonActionState ----------', radioButtonActionState);
+    const defaultQueueMenuValue = this.interactionPayload
+      .getBlockActionValue(BlockIdentifiers.defaultQueueInput, ActionIdentifiers.defaultQueueSelected);
+    const customQueueInputValue = this.interactionPayload
+      .getBlockActionValue(BlockIdentifiers.customQueueInput, ActionIdentifiers.customInputSelected);
 
-    if (!radioButtonActionState) {
-      this.logger.error({ queueRequestType: radioButtonActionState }, 'Could not identify required state values for queue creation');
-      throw new Error('No identifiable queue state or owner');
-    }
-    
-    if (!radioButtonActionState.selected_option || !radioButtonActionState.selected_option.value) {
-      this.logger.info({ radioButtonActionState }, 'No radio button has been selected');
+    if (!defaultQueueMenuValue && !customQueueInputValue) {
+      this.logger.info({ state: this.interactionPayload.payload, defaultQueueMenuValue, customQueueInputValue }, 'No queue type has been selected');
       const alert = new MarkdownTextObject(
         `${emojis.exclamation} *You need to select a queue type to proceed*`,
       );
@@ -82,15 +92,24 @@ export default class InteractionsController {
       httpReq.setBody(CreateQueueForm(alert));
       await httpReq.post();
       return;
+    } else if (defaultQueueMenuValue && customQueueInputValue) {
+      this.logger.info({ state: this.interactionPayload.payload, defaultQueueMenuValue, customQueueInputValue }, 'Too many queue types selected');
+      const alert = new MarkdownTextObject(
+        `${emojis.exclamation} *You can only select one queue type*`,
+      );
+      const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+      httpReq.setBody(CreateQueueForm(alert));
+      await httpReq.post();
+      return;
     }
 
-    const { selected_option: { value: queueName } } = radioButtonActionState;
+    const queueName = defaultQueueMenuValue || customQueueInputValue;
     await this.createQueueForInteractingUser(queueName);
-
+    
     const msgPayload = new MessagePayload(`Successfully created the new queue "${queueName}"`, [])
       .shouldReplaceOriginal('true')
       .setResponseType('ephemeral');
-
+    
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
     httpReq.setBody(msgPayload.render());
     await httpReq.post();
@@ -108,6 +127,55 @@ export default class InteractionsController {
     await this.queueDataMapper.delete(action.value);
   }
 
+  private async handleAddQueueRequest(): Promise<void> {
+    this.logger.info('Handling submission of a create request action');
+
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.addQueueRequest);
+
+    const inputElement = new PlainTextInput('input-request-action');
+    inputElement.multiline = true;
+    const inputBlock = new InputBlock('input-block-id', new TextObject('What is your request?'), inputElement);
+
+    const submitButton = new Button(new TextObject('Submit'), 'primary', ActionIdentifiers.submitQueueRequest);
+    submitButton.setValue(action!.value!);
+    const cancelButton = new Button(new TextObject('Cancel'), 'danger', ActionIdentifiers.cancelInteraction);
+
+    const actionBlock = new ActionBlock('sadfsa', [submitButton, cancelButton]);
+
+    const messagePayload = new MessagePayload('add-request-message', [inputBlock, actionBlock]);
+
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+    httpReq.setBody(messagePayload.render());
+    await httpReq.post();
+
+    return;
+  }
+
+  private async handleSubmitQueueRequest(): Promise<void> {
+    this.logger.info('Handling submission of a submit queue request action');
+
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.submitQueueRequest);
+
+    await this.requestDataMapper.create({
+      description: '',
+      queueId: action!.value!,
+      type: '',
+      userId: '',
+      channelId: this.interactionPayload.channelId,
+      createdById: this.interactionPayload.userId,
+      createdByName: this.interactionPayload.userName,
+    });
+
+    const sectionBlock = new SectionBlock('sdfas', new TextObject('Successfully submitted your request to queue'));
+    const messagePayload = new MessagePayload('submit-request-message', [sectionBlock]);
+
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+    httpReq.setBody(messagePayload.render());
+    await httpReq.post();
+
+    return;
+  }
+
   private async createQueueForInteractingUser(name: string): Promise<Queue> {
     const queueData: QueueInsert = {
       name,
@@ -117,4 +185,5 @@ export default class InteractionsController {
     };
     return await this.queueDataMapper.create(queueData);
   }
+
 } 
