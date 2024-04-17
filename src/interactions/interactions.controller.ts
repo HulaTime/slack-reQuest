@@ -54,6 +54,10 @@ export default class InteractionsController {
         return await this.handleSubmitQueueRequest();
       }
 
+      case ActionIdentifiers.listRequests: {
+        return await this.handleListRequests();
+      }
+
       default: {
         this.logger.warn(
           { actionId },
@@ -105,11 +109,11 @@ export default class InteractionsController {
 
     const queueName = defaultQueueMenuValue || customQueueInputValue;
     await this.createQueueForInteractingUser(queueName);
-    
+
     const msgPayload = new MessagePayload(`Successfully created the new queue "${queueName}"`, [])
       .shouldReplaceOriginal('true')
       .setResponseType('ephemeral');
-    
+
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
     httpReq.setBody(msgPayload.render());
     await httpReq.post();
@@ -136,9 +140,9 @@ export default class InteractionsController {
     inputElement.multiline = true;
     const inputBlock = new InputBlock('input-block-id', new TextObject('What is your request?'), inputElement);
 
-    const submitButton = new Button(new TextObject('Submit'), 'primary', ActionIdentifiers.submitQueueRequest);
+    const submitButton = new Button(ActionIdentifiers.submitQueueRequest, new TextObject('Submit'), 'primary');
     submitButton.setValue(action!.value!);
-    const cancelButton = new Button(new TextObject('Cancel'), 'danger', ActionIdentifiers.cancelInteraction);
+    const cancelButton = new Button(ActionIdentifiers.cancelInteraction, new TextObject('Cancel'), 'danger');
 
     const actionBlock = new ActionBlock('sadfsa', [submitButton, cancelButton]);
 
@@ -174,6 +178,14 @@ export default class InteractionsController {
     await httpReq.post();
 
     return;
+  }
+
+  private async handleListRequests(): Promise<void> {
+    this.logger.info('Handling submission of a create request action');
+
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.listRequests);
+
+    // const requests = this.requestDataMapper.list({ queueId: 
   }
 
   private async createQueueForInteractingUser(name: string): Promise<Queue> {

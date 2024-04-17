@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { OptionObject } from '../compositionObjects';
 import ConfirmationDialogueObject, { SlackConfirmationDialogue } from '../compositionObjects/ConfirmationDialogObject';
 import { SlackOption } from '../compositionObjects/OptionObject';
@@ -16,7 +14,7 @@ type SlackRadioButton = {
 /** https://api.slack.com/reference/block-kit/block-elements#radio */
 export default class RadioButton {
   type: string = 'radio_buttons';
-  
+
   maxOptions: number = 10;
 
   options: Array<OptionObject> = [];
@@ -32,8 +30,8 @@ export default class RadioButton {
   */
   focusOnLoad?: boolean;
 
-  constructor(actionId?: string) {
-    this.actionId = actionId ?? randomUUID();
+  constructor(actionId: string) {
+    this.actionId = actionId;
   }
 
   addOption(option: OptionObject): this {

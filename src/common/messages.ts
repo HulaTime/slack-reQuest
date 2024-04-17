@@ -27,8 +27,8 @@ export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
     alert ?? new MarkdownTextObject('*What type of requests should be managed by this queue?*'),
   );
 
-  const createButton = new Button(new TextObject('Create'), 'primary', ActionIdentifiers.queueTypeSelected);
-  const cancelButton = new Button(new TextObject('Cancel'), 'danger', ActionIdentifiers.cancelInteraction);
+  const createButton = new Button(ActionIdentifiers.queueTypeSelected, new TextObject('Create'), 'primary');
+  const cancelButton = new Button(ActionIdentifiers.cancelInteraction, new TextObject('Cancel'), 'danger');
 
   const actionBlock = new ActionBlock(BlockIdentifiers.submitQueueButtons, [
     createButton,

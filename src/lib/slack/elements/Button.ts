@@ -27,7 +27,7 @@ export default class Button {
 
   value?: string;
 
-  constructor(text: ITextObject, style: ButtonStyles | 'none', actionId: string = randomUUID()) {
+  constructor(actionId: string, text: ITextObject, style: ButtonStyles | 'none') {
     this.text = text;
     this.actionId = actionId;
     if (style !== 'none') {

@@ -68,7 +68,7 @@ export default class CommandsController {
       }
     }
 
-    const headerBlock = new HeaderBlock(new TextObject('Available Queues'));
+    const headerBlock = new HeaderBlock('header-block-id', new TextObject('Available Queues'));
     const blocks: Block[] = [
       headerBlock,
     ];
@@ -88,7 +88,7 @@ export default class CommandsController {
       blocks.push(actionBlock);
     });
 
-    blocks.push(new ActionBlock(ActionIdentifiers.cancelInteraction, [new Button(new TextObject('Close'), 'danger', ActionIdentifiers.cancelInteraction)]));
+    blocks.push(new ActionBlock('action-close-block-id', [new Button(ActionIdentifiers.cancelInteraction, new TextObject('Close'), 'danger')]));
 
     const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
     this.logger.info({ messagePayload }, 'Successfully created list queues slack message payload');

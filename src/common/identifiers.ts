@@ -31,7 +31,8 @@ export enum ActionIdentifiers {
   deleteQueue = 'delete-queue-action',
 
   addQueueRequest = 'add-queue-request-action',
-  submitQueueRequest = 'submit-queue-request-action'
+  submitQueueRequest = 'submit-queue-request-action',
+  listRequests = 'list-requests',
 }
 
 export enum MessageIdentifiers {
