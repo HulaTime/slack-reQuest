@@ -15,6 +15,9 @@ export enum BlockIdentifiers {
   submitQueueButtons = 'submit-queue-buttons',
 
   listedQueueSection = 'listed-queue-section',
+
+  newRequestInput = 'new-request-input',
+  newRequestButtons = 'new-request-buttons',
 }
 
 export enum ActionIdentifiers {
@@ -25,10 +28,11 @@ export enum ActionIdentifiers {
 
   queueTypeSelected = 'select-queue-type-action',
 
-  viewQueueAction = 'view-queue-action',
-  viewQueueRequests = 'view-queue-requests-action',
+  queueButtons = 'view-queue-action',
 
   deleteQueue = 'delete-queue-action',
+
+  newRequestEntered = 'new-request-entered-action',
 
   addQueueRequest = 'add-queue-request-action',
   submitQueueRequest = 'submit-queue-request-action',
@@ -43,5 +47,7 @@ export enum MessageIdentifiers {
 
   listQueuesResponse = 'list-queues-response-message',
   selectQueueToView = 'view-queue-message',
+
+  newRequestForm = 'new-request-form-message',
 }
 

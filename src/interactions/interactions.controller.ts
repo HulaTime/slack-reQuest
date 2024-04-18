@@ -8,9 +8,16 @@ import HttpReq from '../lib/utils/HttpReq';
 import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
 import { emojis } from '../common/emojis';
 import { CreateQueueForm } from '../common/messages';
-import { ActionBlock, InputBlock, SectionBlock } from '../lib/slack/blocks';
-import { Button, PlainTextInput } from '../lib/slack/elements';
+import {
+  ActionBlock, DividerBlock, HeaderBlock, InputBlock, RichTextBlock, SectionBlock,
+} from '../lib/slack/blocks';
+import {
+  Button, PlainTextInput, RichTextList, RichTextSection,
+} from '../lib/slack/elements';
 import RequestDataMapper from '../datamappers/RequestDatamapper';
+import RichTextUser from '../lib/slack/elements/RichText/components/RichTextUser';
+import RichTextText from '../lib/slack/elements/RichText/components/RichTextText';
+import { truncateString } from '../lib/utils/truncateString';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -136,17 +143,17 @@ export default class InteractionsController {
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.addQueueRequest);
 
-    const inputElement = new PlainTextInput('input-request-action');
+    const inputElement = new PlainTextInput(ActionIdentifiers.newRequestEntered);
     inputElement.multiline = true;
-    const inputBlock = new InputBlock('input-block-id', new TextObject('What is your request?'), inputElement);
+    const inputBlock = new InputBlock(BlockIdentifiers.newRequestInput, new TextObject('What is your request?'), inputElement);
 
     const submitButton = new Button(ActionIdentifiers.submitQueueRequest, new TextObject('Submit'), 'primary');
     submitButton.setValue(action!.value!);
     const cancelButton = new Button(ActionIdentifiers.cancelInteraction, new TextObject('Cancel'), 'danger');
 
-    const actionBlock = new ActionBlock('sadfsa', [submitButton, cancelButton]);
+    const actionBlock = new ActionBlock(BlockIdentifiers.newRequestButtons, [submitButton, cancelButton]);
 
-    const messagePayload = new MessagePayload('add-request-message', [inputBlock, actionBlock]);
+    const messagePayload = new MessagePayload(MessageIdentifiers.newRequestForm, [inputBlock, actionBlock]);
 
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
     httpReq.setBody(messagePayload.render());
@@ -159,13 +166,18 @@ export default class InteractionsController {
     this.logger.info('Handling submission of a submit queue request action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.submitQueueRequest);
+    console.log('---------- action ----------', action);
+    const inputValue = this.interactionPayload
+      .getBlockActionValue(BlockIdentifiers.newRequestInput, ActionIdentifiers.newRequestEntered);
+
+    const queue: Queue = JSON.parse(action!.value!);
 
     await this.requestDataMapper.create({
-      description: '',
-      queueId: action!.value!,
-      type: '',
-      userId: '',
-      channelId: this.interactionPayload.channelId,
+      description: inputValue,
+      queueId: queue.id,
+      type: queue.type,
+      userId: queue.userId,
+      channelId: queue.channelId,
       createdById: this.interactionPayload.userId,
       createdByName: this.interactionPayload.userName,
     });
@@ -184,8 +196,33 @@ export default class InteractionsController {
     this.logger.info('Handling submission of a create request action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.listRequests);
+    const queue = JSON.parse(action!.value!);
 
-    // const requests = this.requestDataMapper.list({ queueId: 
+    const requests = await this.requestDataMapper.list({ queueId: queue.id });
+
+    const requestList = new RichTextList('bullet');
+
+    requests.forEach((req) => {
+      requestList.addItem(
+        new RichTextSection()
+          .addElement(new RichTextUser(req.createdById))
+          .addElement(new RichTextText(`: ${truncateString(req.description, 100)}`)),
+      );
+    });
+
+    const requestsHeader = new HeaderBlock('requests=block-id', new TextObject('Requests'));
+    const msgPayload = new MessagePayload('sfd', [
+      new DividerBlock(),
+      requestsHeader,
+      new RichTextBlock('bldasfo', [requestList]),
+      new DividerBlock(),
+    ]);
+
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger)
+      .setBody(msgPayload.render());
+    await httpReq.post();
+    
+    return;
   }
 
   private async createQueueForInteractingUser(name: string): Promise<Queue> {

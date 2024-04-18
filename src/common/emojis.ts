@@ -1,6 +1,13 @@
 type Emojis = {
   circles: Record<string, string>;
   crown: string;
+  squares: {
+    black: {
+      small: string;
+      medium: string;
+      large: string;
+    };
+  };
   exclamation: string;
 };
 
@@ -12,6 +19,13 @@ export const emojis: Emojis = {
     greenCircle: ':large_green_circle:',
     blueCircle: ':large_blue_circle:',
     purpleCircle: ':large_purple_circle:',
+  },
+  squares: {
+    black: {
+      small: ':black_small_square:',
+      medium: ':black_medium_small_square:',
+      large: ':black_medium_square:',
+    },
   },
   crown: ':crown:',
   exclamation: ':exclamation:',

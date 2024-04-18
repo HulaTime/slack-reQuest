@@ -58,34 +58,45 @@ export default class CommandsController {
   }
 
   private async handleListQueuesCommand(): Promise<SlackMessagePayload> {
-    const queues = await this.queueDataMapper.list({ userId: this.slashCommand.userId });
-    const existingPersonalQueue = queues.find(q => q.type === 'user');
-
-    if (!existingPersonalQueue) {
-      const personalQueue = await this.createUserQueue();
-      if (personalQueue) {
-        queues.unshift(personalQueue);
+    let [personalQueue] = await this.queueDataMapper.list({ userId: this.slashCommand.userId, type: 'user' });
+    if (!personalQueue) {
+      const newPersonalQueue = await this.createUserQueue();
+      if (newPersonalQueue) {
+        personalQueue = newPersonalQueue;
       }
     }
+    const channelQueues = await this.queueDataMapper.list({ channelId: this.slashCommand.channelId });
 
     const headerBlock = new HeaderBlock('header-block-id', new TextObject('Available Queues'));
+    const personalQueueSection = new SectionBlock(
+      `${BlockIdentifiers.listedQueueSection}:${personalQueue.id}`,
+      new MarkdownTextObject(`${emojis.crown} *${personalQueue.name}*`),
+    );
+    const personalQueueActionBlock = new ActionBlock(
+      `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
+      [
+        ViewReqButton(JSON.stringify(personalQueue)), AddReqButton(JSON.stringify(personalQueue)),
+      ]);
     const blocks: Block[] = [
       headerBlock,
+      personalQueueSection,
+      personalQueueActionBlock,
+      new DividerBlock(),
     ];
-    queues.forEach(queue => {
-      const prefix = queue.type === 'user' ? emojis.crown : randomCircleEmoji();
+    channelQueues.forEach(queue => {
       const queueSection = new SectionBlock(
         `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
-        new MarkdownTextObject(`${prefix} ${queue.name}`),
-      );
-      const actionBlock = new ActionBlock(
-        `${ActionIdentifiers.viewQueueAction}:${queue.id}`,
-        [ViewReqButton(queue.id), AddReqButton(queue.id), DeleteQueueButton(queue.id)],
+        new MarkdownTextObject(`${emojis.squares.black.medium} *${queue.name}*`),
       );
 
-      blocks.push(new DividerBlock());
+      const stringifiedQueue = JSON.stringify(queue);
+      const queueButtons = [
+        ViewReqButton(stringifiedQueue), AddReqButton(stringifiedQueue), DeleteQueueButton(stringifiedQueue),
+      ];
+      const queueActionBlock = new ActionBlock(`${ActionIdentifiers.queueButtons}:${queue.id}`, queueButtons);
+
       blocks.push(queueSection);
-      blocks.push(actionBlock);
+      blocks.push(queueActionBlock);
     });
 
     blocks.push(new ActionBlock('action-close-block-id', [new Button(ActionIdentifiers.cancelInteraction, new TextObject('Close'), 'danger')]));

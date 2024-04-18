@@ -1,8 +1,14 @@
 import Button from './Button';
 import RadioButton from './RadioButton';
 import PlainTextInput from './PlainTextInput';
+import RichTextSection from './RichText/RichTextSection';
+import RichTextList from './RichText/RichTextList';
 
-export type Elements = Button | RadioButton | PlainTextInput;
+export type RichTextElements = RichTextSection | RichTextList;
 
-export { Button, RadioButton, PlainTextInput };
+export type Elements = Button | RadioButton | PlainTextInput | RichTextElements; 
+
+export {
+  Button, RadioButton, PlainTextInput, RichTextList, RichTextSection, 
+};
 
