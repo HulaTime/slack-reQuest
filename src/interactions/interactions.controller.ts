@@ -132,7 +132,6 @@ export default class InteractionsController {
     this.logger.info('Handling submission of a delete queue action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.deleteQueue);
-    console.log('----- action.value -----', action?.value);
 
     if (!action || !action?.value) {
       this.logger.error({ action }, 'Action does not have required data values to delete a queue');
@@ -152,9 +151,7 @@ export default class InteractionsController {
     );
     const personalQueueActionBlock = new ActionBlock(
       `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
-      [
-        ViewReqButton(JSON.stringify(personalQueue)), AddReqButton(JSON.stringify(personalQueue)),
-      ]);
+      [ViewReqButton(JSON.stringify(personalQueue))]);
     const blocks: Block[] = [
       headerBlock,
       personalQueueSection,
@@ -215,7 +212,6 @@ export default class InteractionsController {
     this.logger.info('Handling submission of a submit queue request action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.submitQueueRequest);
-    console.log('---------- action ----------', action);
     const inputValue = this.interactionPayload
       .getBlockActionValue(BlockIdentifiers.newRequestInput, ActionIdentifiers.newRequestEntered);
 
@@ -249,21 +245,32 @@ export default class InteractionsController {
 
     const requests = await this.requestDataMapper.list({ queueId: queue.id });
 
-    const requestList = new RichTextList('bullet');
-
-    requests.forEach((req) => {
-      requestList.addItem(
-        new RichTextSection()
-          .addElement(new RichTextUser(req.createdById))
-          .addElement(new RichTextText(`: ${truncateString(req.description, 100)}`)),
+    const blocks: Block[] = [];
+    requests.forEach((r) => {
+      blocks.push(
+        new SectionBlock(
+          `${r.id}`,
+          new MarkdownTextObject(truncateString(`<@${r.createdById}>: ${r.description}`, 256)),
+        )
+          .addAccessory(new Button(r.id, new TextObject('Expand'), 'none')),
       );
     });
+    // const requestList = new RichTextList('bullet');
+    //
+    // requests.forEach((req) => {
+    //   requestList.addItem(
+    //     new RichTextSection()
+    //       .addElement(new RichTextUser(req.createdById))
+    //       .addElement(new RichTextText(`: ${truncateString(req.description, 100)}`)),
+    //   );
+    // });
 
     const requestsHeader = new HeaderBlock('requests=block-id', new TextObject('Requests'));
     const msgPayload = new MessagePayload('sfd', [
-      new DividerBlock(),
+      // new DividerBlock(),
       requestsHeader,
-      new RichTextBlock('bldasfo', [requestList]),
+      // new RichTextBlock('bldasfo', [requestList]),
+      ...blocks,
       new DividerBlock(),
     ]);
 

@@ -12,7 +12,7 @@ import { Button } from '../lib/slack/elements';
 import { MessagePayload } from '../lib/slack/messagePayloads';
 import { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
 import { SlashCommand } from '../lib/slack/slashCommands';
-import { emojis, randomCircleEmoji } from '../common/emojis';
+import { emojis } from '../common/emojis';
 import Block from '../lib/slack/blocks/Block';
 import { CreateQueueForm } from '../common/messages';
 
@@ -74,9 +74,7 @@ export default class CommandsController {
     );
     const personalQueueActionBlock = new ActionBlock(
       `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
-      [
-        ViewReqButton(JSON.stringify(personalQueue)), AddReqButton(JSON.stringify(personalQueue)),
-      ]);
+      [ViewReqButton(JSON.stringify(personalQueue))]);
     const blocks: Block[] = [
       headerBlock,
       personalQueueSection,

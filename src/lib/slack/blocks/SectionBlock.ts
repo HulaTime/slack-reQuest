@@ -21,9 +21,14 @@ export default class SectionBlock extends Block<SlackSectionBlock> {
 
   accessory?: Elements;
 
-  constructor(blockId: string, text: ITextObject) {
+  private maxTextLength = 3000;
+
+  constructor(blockId: string, textObject: ITextObject) {
     super('section', blockId);
-    this.text = text;
+    if (textObject.text.length > this.maxTextLength) {
+      throw new Error(`Text for a section block cannot exceed ${this.maxTextLength} characters in length`);
+    }
+    this.text = textObject;
   }
 
   addAccessory(element: Elements): this {
