@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { Express } from 'express';
 import supertest, { Response } from 'supertest';
 
-import { SlackSlashCommandPayload } from '../../../src/lib/slack/messages/SlashCommand';
+import { SlackSlashCommandPayload } from '../../../src/lib/slack/slashCommands/SlashCommand';
 
 const slashCommandPayload = (command: string, text: string, userId: string): SlackSlashCommandPayload => ({
   token: 'token',

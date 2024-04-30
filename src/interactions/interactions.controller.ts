@@ -18,6 +18,8 @@ import RequestDataMapper from '../datamappers/RequestDatamapper';
 import RichTextUser from '../lib/slack/elements/RichText/components/RichTextUser';
 import RichTextText from '../lib/slack/elements/RichText/components/RichTextText';
 import { truncateString } from '../lib/utils/truncateString';
+import { AddReqButton, DeleteQueueButton, ViewReqButton } from '../commands/buttons';
+import Block from '../lib/slack/blocks/Block';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -130,12 +132,59 @@ export default class InteractionsController {
     this.logger.info('Handling submission of a delete queue action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.deleteQueue);
+    console.log('----- action.value -----', action?.value);
+
     if (!action || !action?.value) {
       this.logger.error({ action }, 'Action does not have required data values to delete a queue');
       return;
     }
 
-    await this.queueDataMapper.delete(action.value);
+    await this.queueDataMapper.delete(JSON.parse(action.value).id);
+
+    const [personalQueue] = await this.queueDataMapper.list({ userId: this.interactionPayload.userId, type: 'user' });
+
+    const channelQueues = await this.queueDataMapper.list({ channelId: this.interactionPayload.channelId });
+
+    const headerBlock = new HeaderBlock('header-block-id', new TextObject('Available Queues'));
+    const personalQueueSection = new SectionBlock(
+      `${BlockIdentifiers.listedQueueSection}:${personalQueue.id}`,
+      new MarkdownTextObject(`${emojis.crown} *${personalQueue.name}*`),
+    );
+    const personalQueueActionBlock = new ActionBlock(
+      `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
+      [
+        ViewReqButton(JSON.stringify(personalQueue)), AddReqButton(JSON.stringify(personalQueue)),
+      ]);
+    const blocks: Block[] = [
+      headerBlock,
+      personalQueueSection,
+      personalQueueActionBlock,
+      new DividerBlock(),
+    ];
+    channelQueues.forEach(queue => {
+      const queueSection = new SectionBlock(
+        `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
+        new MarkdownTextObject(`${emojis.squares.black.medium} *${queue.name}*`),
+      );
+
+      const stringifiedQueue = JSON.stringify(queue);
+      const queueButtons = [
+        ViewReqButton(stringifiedQueue), AddReqButton(stringifiedQueue), DeleteQueueButton(stringifiedQueue),
+      ];
+      const queueActionBlock = new ActionBlock(`${ActionIdentifiers.queueButtons}:${queue.id}`, queueButtons);
+
+      blocks.push(queueSection);
+      blocks.push(queueActionBlock);
+    });
+
+    blocks.push(new ActionBlock('action-close-block-id', [new Button(ActionIdentifiers.cancelInteraction, new TextObject('Close'), 'danger')]));
+
+    const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
+    this.logger.info({ messagePayload }, 'Successfully created updated list queues slack message payload');
+
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
+    httpReq.setBody(messagePayload.render());
+    await httpReq.post();
   }
 
   private async handleAddQueueRequest(): Promise<void> {
@@ -221,7 +270,7 @@ export default class InteractionsController {
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger)
       .setBody(msgPayload.render());
     await httpReq.post();
-    
+
     return;
   }
 

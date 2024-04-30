@@ -29,7 +29,7 @@ export type BlockStateValue = {
 }
 
 export type InteractionState = {
-  values: BlockStateValue; 
+  values: BlockStateValue;
 }
 
 export interface SlackInteractionPayload {

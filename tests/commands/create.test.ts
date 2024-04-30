@@ -52,7 +52,7 @@ describe('POST /commands "create"', () => {
 
   test('I should receive a 200 success response', async () => {
     const userRequest = new UserRequest(app);
-    const { statusCode } = await userRequest.sendCommand('slackq', 'create');
+    const { statusCode } = await userRequest.sendCommand('request', 'create');
     expect(statusCode).toEqual(200);
   });
 
@@ -63,6 +63,6 @@ describe('POST /commands "create"', () => {
   });
 
   describe('Creating personal queues', () => {
-    
+
   })
 });

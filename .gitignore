@@ -4,4 +4,4 @@ dist
 .vscode
 coverage
 .env
-
+.run
