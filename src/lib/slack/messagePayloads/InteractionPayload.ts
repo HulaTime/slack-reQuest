@@ -1,7 +1,7 @@
 import { Logger } from 'pino';
 
 import { SlackTextObject } from '../compositionObjects/TextObject';
-import { ActionIdentifiers, BlockIdentifiers } from '../../../common/identifiers';
+import { ActionIdentifiers, BlockIdentifiers, SelectionIdentifiers } from '../../../common/identifiers';
 
 export type SlackIteractionAction = {
   block_id: string;
@@ -98,14 +98,14 @@ export default class InteractionPayload {
     return action;
   }
 
-  getBlockActionValue(blockId: BlockIdentifiers, actionId: ActionIdentifiers): string {
+  getBlockStateValue(blockId: BlockIdentifiers, blockStateIdentifier: SelectionIdentifiers): string {
     const blockState = this.payload.state.values[blockId];
     if (!blockState) {
       this.logger.error('Could not find block state', { blockId, stateValues: this.payload.state.values });
       return '';
     }
 
-    const actionState = blockState[actionId];
+    const actionState = blockState[blockStateIdentifier];
 
     if (actionState?.type === 'radio_buttons') {
       return actionState.selected_option?.value ?? '';

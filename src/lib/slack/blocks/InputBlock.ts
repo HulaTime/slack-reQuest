@@ -38,7 +38,7 @@ export default class InputBlock extends Block<SlackInputBlock> {
   */
   optional?: boolean = false;
 
-  constructor(blockId: string, label: TextObject, element: SupportedInputElements) {
+  constructor(element: SupportedInputElements, label: TextObject, blockId?: string) {
     super('input', blockId);
     this.label = label;
     this.element = element;
@@ -48,7 +48,7 @@ export default class InputBlock extends Block<SlackInputBlock> {
     this.hint = textObject;
     return this;
   }
-  
+
   isOptional(value: boolean): this {
     this.optional = value;
     return this;

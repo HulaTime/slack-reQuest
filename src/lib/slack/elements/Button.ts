@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { ITextObject, SlackTextObject } from '../compositionObjects/TextObject';
 import { SlackConfirmationDialogue } from '../compositionObjects/ConfirmationDialogObject';
 
@@ -16,7 +18,7 @@ export type SlackButton = {
 
 export default class Button {
   type: string = 'button';
-  
+
   text: ITextObject;
 
   actionId: string;
@@ -25,9 +27,9 @@ export default class Button {
 
   value?: string;
 
-  constructor(actionId: string, text: ITextObject, style: ButtonStyles | 'none') {
+  constructor(text: ITextObject, style: ButtonStyles | 'none', actionId?: string) {
     this.text = text;
-    this.actionId = actionId;
+    this.actionId = actionId ?? randomUUID();
     if (style !== 'none') {
       this.style = style;
     }
@@ -39,12 +41,12 @@ export default class Button {
   }
 
   render(): SlackButton {
-    return { 
+    return {
       type: this.type,
       text: this.text.render(),
       style: this.style,
       action_id: this.actionId,
       value: this.value,
     };
-  } 
+  }
 }

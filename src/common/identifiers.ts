@@ -18,25 +18,29 @@ export enum BlockIdentifiers {
 
   newRequestInput = 'new-request-input',
   newRequestButtons = 'new-request-buttons',
+
+  queueListElement = 'queue-list-element', 
+}
+
+export enum SelectionIdentifiers {
+  defaultQueueRadioOption = 'default-queue-selection',
+  customQueueInput = 'custom-queue-input',
+  requestInputField = 'request-input-field',
 }
 
 export enum ActionIdentifiers {
-  cancelInteraction = 'cancel-interaction',
-
-  defaultQueueSelected = 'default-queue-selected',
-  customInputSelected = 'custom-input-selected',
-
-  queueTypeSelected = 'select-queue-type-action',
-
-  queueButtons = 'view-queue-action',
-
-  deleteQueue = 'delete-queue-action',
-
-  newRequestEntered = 'new-request-entered-action',
-
-  addQueueRequest = 'add-queue-request-action',
-  submitQueueRequest = 'submit-queue-request-action',
-  listRequests = 'list-requests',
+  cancel = 'cancel-interaction',
+  submitNewQueue = 'submit-new-queue',
+  deleteQueue = 'delete-queue',
+  addRequest = 'add-request',
+  submitRequest = 'submit-request',
+  viewRequests = 'view-requests',
+  deleteRequest = 'delete-request',
+  editRequest = 'edit-request',
+  acceptRequest = 'accept-request',
+  rejectRequest = 'reject-request',
+  completedRequest = 'completed-request',
+  stopRequest = 'stop-request',
 }
 
 export enum MessageIdentifiers {

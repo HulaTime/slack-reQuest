@@ -10,6 +10,10 @@ export default abstract class Block<RenderType = Record<string, unknown>> {
     this.blockId = blockId ?? randomUUID();
   };
 
+  setId(id: string): void {
+    this.blockId = id;
+  }
+
   abstract render(): RenderType
 };
 

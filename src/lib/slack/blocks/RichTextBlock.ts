@@ -11,11 +11,8 @@ export type SlackRichTextBlock = {
 export default class RichTextBlock extends Block<SlackRichTextBlock> {
   private readonly elements: RichTextElements[] = [];
 
-  constructor(blockId: string, elements?: RichTextElements[]) {
+  constructor(blockId?: string) {
     super('rich_text', blockId);
-    if (elements) {
-      this.elements = elements;
-    }
   }
 
   addElement(element: RichTextElements): this {

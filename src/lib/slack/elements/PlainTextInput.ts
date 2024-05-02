@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import DispatchActionConfiguration, { SlackDispatchActionConfig } from '../compositionObjects/DispatchActionConfiguration';
 import { SlackTextObject, TextObject } from '../compositionObjects/TextObject';
 
@@ -32,14 +34,16 @@ export default class PlainTextInput {
 
   placeholder?: TextObject;
 
-  constructor(actionId: string, maxLength?: number) {
-    if (maxLength && maxLength > 3000) {
+  constructor(actionId?: string) {
+    this.action_id = actionId ?? randomUUID();
+  }
+
+  setMaxLength(length: number): this {
+    if (length > 3000) {
       throw new Error('Cannot create plain text input element with max length greater than 3000');
     }
-    if (maxLength) {
-      this.max_length = maxLength;
-    }
-    this.action_id = actionId;
+    this.max_length = length;
+    return this;
   }
 
   render(): SlackPlainTextInput {

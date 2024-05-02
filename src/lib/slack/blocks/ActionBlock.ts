@@ -16,7 +16,7 @@ export default class ActionBlock extends Block<SlackActionBlock> {
 
   maxElements: number = 25;
 
-  constructor(blockId: string, elements: Array<Elements>) {
+  constructor(elements: Array<Elements>, blockId?: string) {
     super('actions', blockId);
     if (elements.length > this.maxElements) {
       throw new Error(`Cannot create an action block with more than ${this.maxElements} elements`);

@@ -16,7 +16,7 @@ export default class HeaderBlock extends Block<SlackHeaderBlock> {
 
   maxTextLength: number = 100;
 
-  constructor(blockId: string, text: ITextObject) {
+  constructor(text: ITextObject) {
     super('header');
     this.text = text;
     this.validateTextLength();

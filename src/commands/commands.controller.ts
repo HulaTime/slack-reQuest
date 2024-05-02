@@ -2,21 +2,20 @@ import { Logger } from 'pino';
 
 import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
 import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
-import {
-  ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SupportedSlashCommands,
-} from '../common/identifiers';
+import { MessageIdentifiers, SupportedSlashCommands } from '../common/identifiers';
 import {
   ActionBlock, DividerBlock, HeaderBlock, SectionBlock,
 } from '../lib/slack/blocks';
-import { Button } from '../lib/slack/elements';
 import { MessagePayload } from '../lib/slack/messagePayloads';
 import { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
 import { SlashCommand } from '../lib/slack/slashCommands';
 import { emojis } from '../common/emojis';
 import Block from '../lib/slack/blocks/Block';
 import { CreateQueueForm } from '../common/messages';
+import {
+  CancelButton , AddReqButton, DeleteQueueButton, ViewReqButton, 
+} from '../common/buttons';
 
-import { AddReqButton, DeleteQueueButton, ViewReqButton } from './buttons';
 
 export default class CommandsController {
   private readonly logger: Logger;
@@ -67,14 +66,13 @@ export default class CommandsController {
     }
     const channelQueues = await this.queueDataMapper.list({ channelId: this.slashCommand.channelId });
 
-    const headerBlock = new HeaderBlock('header-block-id', new TextObject('Available Queues'));
+    const headerBlock = new HeaderBlock(new TextObject('Available Queues'));
     const personalQueueSection = new SectionBlock(
-      `${BlockIdentifiers.listedQueueSection}:${personalQueue.id}`,
       new MarkdownTextObject(`${emojis.crown} *${personalQueue.name}*`),
     );
     const personalQueueActionBlock = new ActionBlock(
-      `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
-      [ViewReqButton(JSON.stringify(personalQueue))]);
+      [ViewReqButton(JSON.stringify(personalQueue))],
+    );
     const blocks: Block[] = [
       headerBlock,
       personalQueueSection,
@@ -83,7 +81,6 @@ export default class CommandsController {
     ];
     channelQueues.forEach(queue => {
       const queueSection = new SectionBlock(
-        `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
         new MarkdownTextObject(`${emojis.squares.black.medium} *${queue.name}*`),
       );
 
@@ -91,13 +88,13 @@ export default class CommandsController {
       const queueButtons = [
         ViewReqButton(stringifiedQueue), AddReqButton(stringifiedQueue), DeleteQueueButton(stringifiedQueue),
       ];
-      const queueActionBlock = new ActionBlock(`${ActionIdentifiers.queueButtons}:${queue.id}`, queueButtons);
+      const queueActionBlock = new ActionBlock(queueButtons);
 
       blocks.push(queueSection);
       blocks.push(queueActionBlock);
     });
 
-    blocks.push(new ActionBlock('action-close-block-id', [new Button(ActionIdentifiers.cancelInteraction, new TextObject('Close'), 'danger')]));
+    blocks.push(new ActionBlock([CancelButton]));
 
     const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
     this.logger.info({ messagePayload }, 'Successfully created list queues slack message payload');

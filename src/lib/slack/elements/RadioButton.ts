@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { OptionObject } from '../compositionObjects';
 import ConfirmationDialogueObject, { SlackConfirmationDialogue } from '../compositionObjects/ConfirmationDialogObject';
 import { SlackOption } from '../compositionObjects/OptionObject';
@@ -30,8 +32,8 @@ export default class RadioButton {
   */
   focusOnLoad?: boolean;
 
-  constructor(actionId: string) {
-    this.actionId = actionId;
+  constructor(actionId?: string) {
+    this.actionId = actionId ?? randomUUID();
   }
 
   addOption(option: OptionObject): this {

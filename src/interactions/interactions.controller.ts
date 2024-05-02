@@ -1,7 +1,9 @@
 import { Request } from 'express';
 import { Logger } from 'pino';
 
-import { ActionIdentifiers, BlockIdentifiers, MessageIdentifiers } from '../common/identifiers';
+import {
+  ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SelectionIdentifiers, 
+} from '../common/identifiers';
 import QueueDataMapper, { Queue, QueueInsert } from '../datamappers/QueueDatamapper';
 import { InteractionPayload, MessagePayload } from '../lib/slack/messagePayloads';
 import HttpReq from '../lib/utils/HttpReq';
@@ -13,9 +15,11 @@ import {
 } from '../lib/slack/blocks';
 import { Button, PlainTextInput } from '../lib/slack/elements';
 import RequestDataMapper from '../datamappers/RequestDatamapper';
-import { AddReqButton, DeleteQueueButton, ViewReqButton } from '../commands/buttons';
 import Block from '../lib/slack/blocks/Block';
 import { MAX_QUEUE_REQUEST_LENGTH } from '../../constants/app';
+import {
+  AddReqButton, CancelButton, DeleteQueueButton, ViewReqButton,
+} from '../common/buttons';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -39,27 +43,27 @@ export default class InteractionsController {
     }
     const actionId = this.interactionPayload.getActionId();
     switch (actionId) {
-      case ActionIdentifiers.cancelInteraction: {
+      case ActionIdentifiers.cancel: {
         return await this.handleCancelInteraction();
       }
 
-      case ActionIdentifiers.queueTypeSelected: {
-        return await this.handleQueueTypeSelected();
+      case ActionIdentifiers.submitNewQueue: {
+        return await this.handleQueueSubmitted();
       }
 
       case ActionIdentifiers.deleteQueue: {
-        return await this.handleDeleteQueueInteraction();
+        return await this.handleDeleteQueue();
       }
 
-      case ActionIdentifiers.addQueueRequest: {
-        return await this.handleAddQueueRequest();
+      case ActionIdentifiers.addRequest: {
+        return await this.handleAddRequest();
       }
 
-      case ActionIdentifiers.submitQueueRequest: {
-        return await this.handleSubmitQueueRequest();
+      case ActionIdentifiers.submitRequest: {
+        return await this.handleSubmitRequest();
       }
 
-      case ActionIdentifiers.listRequests: {
+      case ActionIdentifiers.viewRequests: {
         return await this.handleListRequests();
       }
 
@@ -84,13 +88,13 @@ export default class InteractionsController {
     await httpReq.post();
   }
 
-  private async handleQueueTypeSelected(): Promise<void> {
+  private async handleQueueSubmitted(): Promise<void> {
     this.logger.info('Handling submission of a select queue type action');
 
     const defaultQueueMenuValue = this.interactionPayload
-      .getBlockActionValue(BlockIdentifiers.defaultQueueInput, ActionIdentifiers.defaultQueueSelected);
+      .getBlockStateValue(BlockIdentifiers.defaultQueueInput, SelectionIdentifiers.defaultQueueRadioOption);
     const customQueueInputValue = this.interactionPayload
-      .getBlockActionValue(BlockIdentifiers.customQueueInput, ActionIdentifiers.customInputSelected);
+      .getBlockStateValue(BlockIdentifiers.customQueueInput, SelectionIdentifiers.customQueueInput);
 
     if (!defaultQueueMenuValue && !customQueueInputValue) {
       this.logger.info({ state: this.interactionPayload.payload, defaultQueueMenuValue, customQueueInputValue }, 'No queue type has been selected');
@@ -124,7 +128,7 @@ export default class InteractionsController {
     await httpReq.post();
   }
 
-  private async handleDeleteQueueInteraction(): Promise<void> {
+  private async handleDeleteQueue(): Promise<void> {
     this.logger.info('Handling submission of a delete queue action');
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.deleteQueue);
@@ -140,14 +144,13 @@ export default class InteractionsController {
 
     const channelQueues = await this.queueDataMapper.list({ channelId: this.interactionPayload.channelId });
 
-    const headerBlock = new HeaderBlock('header-block-id', new TextObject('Available Queues'));
+    const headerBlock = new HeaderBlock(new TextObject('Available Queues'));
     const personalQueueSection = new SectionBlock(
-      `${BlockIdentifiers.listedQueueSection}:${personalQueue.id}`,
       new MarkdownTextObject(`${emojis.crown} *${personalQueue.name}*`),
     );
     const personalQueueActionBlock = new ActionBlock(
-      `${ActionIdentifiers.queueButtons}:${personalQueue.id}`,
-      [ViewReqButton(JSON.stringify(personalQueue))]);
+      [ViewReqButton(JSON.stringify(personalQueue))],
+    );
     const blocks: Block[] = [
       headerBlock,
       personalQueueSection,
@@ -156,7 +159,6 @@ export default class InteractionsController {
     ];
     channelQueues.forEach(queue => {
       const queueSection = new SectionBlock(
-        `${BlockIdentifiers.listedQueueSection}:${queue.id}`,
         new MarkdownTextObject(`${emojis.squares.black.medium} *${queue.name}*`),
       );
 
@@ -164,13 +166,13 @@ export default class InteractionsController {
       const queueButtons = [
         ViewReqButton(stringifiedQueue), AddReqButton(stringifiedQueue), DeleteQueueButton(stringifiedQueue),
       ];
-      const queueActionBlock = new ActionBlock(`${ActionIdentifiers.queueButtons}:${queue.id}`, queueButtons);
+      const queueActionBlock = new ActionBlock(queueButtons);
 
       blocks.push(queueSection);
       blocks.push(queueActionBlock);
     });
 
-    blocks.push(new ActionBlock('action-close-block-id', [new Button(ActionIdentifiers.cancelInteraction, new TextObject('Close'), 'danger')]));
+    blocks.push(new ActionBlock([CancelButton]));
 
     const messagePayload = new MessagePayload(MessageIdentifiers.listQueuesResponse, blocks);
     this.logger.info({ messagePayload }, 'Successfully created updated list queues slack message payload');
@@ -180,20 +182,20 @@ export default class InteractionsController {
     await httpReq.post();
   }
 
-  private async handleAddQueueRequest(): Promise<void> {
+  private async handleAddRequest(): Promise<void> {
     this.logger.info('Handling submission of a create request action');
 
-    const action = this.interactionPayload.getActionById(ActionIdentifiers.addQueueRequest);
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.addRequest);
 
-    const inputElement = new PlainTextInput(ActionIdentifiers.newRequestEntered, MAX_QUEUE_REQUEST_LENGTH);
+    const inputElement = new PlainTextInput(SelectionIdentifiers.requestInputField);
+    inputElement.setMaxLength(MAX_QUEUE_REQUEST_LENGTH);
     inputElement.multiline = true;
-    const inputBlock = new InputBlock(BlockIdentifiers.newRequestInput, new TextObject('What is your request?'), inputElement);
+    const inputBlock = new InputBlock(inputElement, new TextObject('What is your request?'), BlockIdentifiers.newRequestInput);
 
-    const submitButton = new Button(ActionIdentifiers.submitQueueRequest, new TextObject('Submit'), 'primary');
+    const submitButton = new Button(new TextObject('Submit'), 'primary', ActionIdentifiers.submitRequest);
     submitButton.setValue(action!.value!);
-    const cancelButton = new Button(ActionIdentifiers.cancelInteraction, new TextObject('Cancel'), 'danger');
 
-    const actionBlock = new ActionBlock(BlockIdentifiers.newRequestButtons, [submitButton, cancelButton]);
+    const actionBlock = new ActionBlock([submitButton, CancelButton], BlockIdentifiers.newRequestButtons);
 
     const messagePayload = new MessagePayload(MessageIdentifiers.newRequestForm, [inputBlock, actionBlock]);
 
@@ -204,12 +206,12 @@ export default class InteractionsController {
     return;
   }
 
-  private async handleSubmitQueueRequest(): Promise<void> {
+  private async handleSubmitRequest(): Promise<void> {
     this.logger.info('Handling submission of a submit queue request action');
 
-    const action = this.interactionPayload.getActionById(ActionIdentifiers.submitQueueRequest);
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.submitRequest);
     const inputValue = this.interactionPayload
-      .getBlockActionValue(BlockIdentifiers.newRequestInput, ActionIdentifiers.newRequestEntered);
+      .getBlockStateValue(BlockIdentifiers.newRequestInput, SelectionIdentifiers.requestInputField);
 
     const queue: Queue = JSON.parse(action!.value!);
 
@@ -223,7 +225,7 @@ export default class InteractionsController {
       createdByName: this.interactionPayload.userName,
     });
 
-    const sectionBlock = new SectionBlock('sdfas', new TextObject('Successfully submitted your request to queue'));
+    const sectionBlock = new SectionBlock(new TextObject('Successfully submitted your request to queue'));
     const messagePayload = new MessagePayload('submit-request-message', [sectionBlock]);
 
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger);
@@ -236,7 +238,7 @@ export default class InteractionsController {
   private async handleListRequests(): Promise<void> {
     this.logger.info('Handling submission of a create request action');
 
-    const action = this.interactionPayload.getActionById(ActionIdentifiers.listRequests);
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.viewRequests);
     const queue = JSON.parse(action!.value!);
 
     const requests = await this.requestDataMapper.list({ queueId: queue.id });
@@ -245,18 +247,23 @@ export default class InteractionsController {
     requests.forEach((r) => {
       blocks.push(
         new SectionBlock(
-          `${r.id}`,
           new MarkdownTextObject(`<@${r.createdById}>: ${r.description}`),
-        )
-          .addAccessory(new Button(r.id, new TextObject('Expand'), 'none')),
+        ),
       );
+      blocks.push(new ActionBlock([
+        new Button(new TextObject('Pick up request'), 'primary'),
+        new Button(new TextObject('Reject'), 'none'),
+      ]));
+      blocks.push(
+      );
+      blocks.push(new DividerBlock());
     });
 
-    const requestsHeader = new HeaderBlock('list-requests-header-block', new TextObject('Requests'));
+    const requestsHeader = new HeaderBlock(new TextObject('Requests'));
     const msgPayload = new MessagePayload('sfd', [
       requestsHeader,
       ...blocks,
-      new DividerBlock(),
+      new ActionBlock([CancelButton]),
     ]);
 
     const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger)
@@ -275,5 +282,4 @@ export default class InteractionsController {
     };
     return await this.queueDataMapper.create(queueData);
   }
-
 } 

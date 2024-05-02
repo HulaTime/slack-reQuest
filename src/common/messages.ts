@@ -4,12 +4,13 @@ import { ITextObject } from '../lib/slack/compositionObjects/TextObject';
 import { Button, PlainTextInput, RadioButton } from '../lib/slack/elements';
 import MessagePayload, { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
 
+import { CancelButton } from './buttons';
 import {
-  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers,
+  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, SelectionIdentifiers,
 } from './identifiers';
 
 export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
-  const defaultQueueRadioButtons = new RadioButton(ActionIdentifiers.defaultQueueSelected)
+  const defaultQueueRadioButtons = new RadioButton(SelectionIdentifiers.defaultQueueRadioOption)
     .addOption(new OptionObject(
       new TextObject('Code Review'),
       DefaultQueueTypes.codeReview,
@@ -19,20 +20,21 @@ export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
       DefaultQueueTypes.release,
     ));
 
-  const defaultOptions = new InputBlock(BlockIdentifiers.defaultQueueInput, new TextObject('Default Queues:'), defaultQueueRadioButtons);
-  const customInput = new InputBlock(BlockIdentifiers.customQueueInput, new TextObject('Custom:'), new PlainTextInput(ActionIdentifiers.customInputSelected));
+  const defaultOptions = new InputBlock(defaultQueueRadioButtons, new TextObject('Default Queues:'), BlockIdentifiers.defaultQueueInput);
+
+  const customInputField = new PlainTextInput(SelectionIdentifiers.customQueueInput);
+  customInputField.setMaxLength(256);
+  const customInput = new InputBlock(customInputField, new TextObject('Custom:'), BlockIdentifiers.customQueueInput);
 
   const headerSection = new SectionBlock(
-    BlockIdentifiers.submitQueueHeader,
     alert ?? new MarkdownTextObject('*What type of requests should be managed by this queue?*'),
   );
 
-  const createButton = new Button(ActionIdentifiers.queueTypeSelected, new TextObject('Create'), 'primary');
-  const cancelButton = new Button(ActionIdentifiers.cancelInteraction, new TextObject('Cancel'), 'danger');
+  const createButton = new Button(new TextObject('Create'), 'primary', ActionIdentifiers.submitNewQueue);
 
-  const actionBlock = new ActionBlock(BlockIdentifiers.submitQueueButtons, [
+  const actionBlock = new ActionBlock([
     createButton,
-    cancelButton,
+    CancelButton,
   ]);
 
   const messageBlocks = [
