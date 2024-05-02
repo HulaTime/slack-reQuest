@@ -9,17 +9,13 @@ import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects'
 import { emojis } from '../common/emojis';
 import { CreateQueueForm } from '../common/messages';
 import {
-  ActionBlock, DividerBlock, HeaderBlock, InputBlock, RichTextBlock, SectionBlock,
+  ActionBlock, DividerBlock, HeaderBlock, InputBlock, SectionBlock,
 } from '../lib/slack/blocks';
-import {
-  Button, PlainTextInput, RichTextList, RichTextSection,
-} from '../lib/slack/elements';
+import { Button, PlainTextInput } from '../lib/slack/elements';
 import RequestDataMapper from '../datamappers/RequestDatamapper';
-import RichTextUser from '../lib/slack/elements/RichText/components/RichTextUser';
-import RichTextText from '../lib/slack/elements/RichText/components/RichTextText';
-import { truncateString } from '../lib/utils/truncateString';
 import { AddReqButton, DeleteQueueButton, ViewReqButton } from '../commands/buttons';
 import Block from '../lib/slack/blocks/Block';
+import { MAX_QUEUE_REQUEST_LENGTH } from '../../constants/app';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;
@@ -189,7 +185,7 @@ export default class InteractionsController {
 
     const action = this.interactionPayload.getActionById(ActionIdentifiers.addQueueRequest);
 
-    const inputElement = new PlainTextInput(ActionIdentifiers.newRequestEntered);
+    const inputElement = new PlainTextInput(ActionIdentifiers.newRequestEntered, MAX_QUEUE_REQUEST_LENGTH);
     inputElement.multiline = true;
     const inputBlock = new InputBlock(BlockIdentifiers.newRequestInput, new TextObject('What is your request?'), inputElement);
 
@@ -250,26 +246,15 @@ export default class InteractionsController {
       blocks.push(
         new SectionBlock(
           `${r.id}`,
-          new MarkdownTextObject(truncateString(`<@${r.createdById}>: ${r.description}`, 256)),
+          new MarkdownTextObject(`<@${r.createdById}>: ${r.description}`),
         )
           .addAccessory(new Button(r.id, new TextObject('Expand'), 'none')),
       );
     });
-    // const requestList = new RichTextList('bullet');
-    //
-    // requests.forEach((req) => {
-    //   requestList.addItem(
-    //     new RichTextSection()
-    //       .addElement(new RichTextUser(req.createdById))
-    //       .addElement(new RichTextText(`: ${truncateString(req.description, 100)}`)),
-    //   );
-    // });
 
-    const requestsHeader = new HeaderBlock('requests=block-id', new TextObject('Requests'));
+    const requestsHeader = new HeaderBlock('list-requests-header-block', new TextObject('Requests'));
     const msgPayload = new MessagePayload('sfd', [
-      // new DividerBlock(),
       requestsHeader,
-      // new RichTextBlock('bldasfo', [requestList]),
       ...blocks,
       new DividerBlock(),
     ]);

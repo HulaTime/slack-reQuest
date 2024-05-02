@@ -8,14 +8,15 @@ describe('Obj', () => {
   describe('#value', () => {
     test('returns the raw object that the class was instantiated with', () => {
       const obj = new Obj({ foo: 'bar' });
-      expect(obj.original()).toEqual({ foo: 'bar' });
+      expect(obj.getOriginal()).toEqual({ foo: 'bar' });
     });
   });
 
   describe('#convertToCamel', () => {
     test('returns object with camelCased keys from the original object', () => {
       const obj = new Obj({ foo_bar: 'boop' });
-      expect(obj.convertToCamel()).toEqual({ fooBar: 'boop' });
+      const camelCased = obj.convertToCamel();
+      expect(camelCased).toEqual({ fooBar: 'boop' });
     });
 
     test('returns object with camelCased keys from the original object when there are multiple keys', () => {

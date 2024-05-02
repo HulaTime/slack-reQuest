@@ -1,46 +1,44 @@
 const isAlphanumeric = (str: string): boolean => /^[a-zA-Z0-9]+$/.test(str);
 
-export type CamelCase<S extends string> =
-  S extends `${infer P}_${infer Q}${infer R}`
-  ? `${P}${Capitalize<Q>}${CamelCase<R>}`
+export type SnakeToCamelCase<S extends string> = S extends `${infer T}_${infer U}`
+  ? `${T}${Capitalize<SnakeToCamelCase<U>>}`
   : S;
 
-export type SnakeToCamelCase<T> = {
-  [K in keyof T as CamelCase<K & string>]: T[K]
+export type ConvertSnakeToCamel<T> = {
+  [K in keyof T as SnakeToCamelCase<K & string>]: T[K]
 };
 
-export type SnakeCase<S extends string> = 
-  S extends `${infer P1}${infer P2}` 
-    ? P2 extends Capitalize<P2> 
-      ? `${Lowercase<P1>}_${SnakeCase<Lowercase<P2>>}`
-      : `${P1}${SnakeCase<P2>}`
-    : S;
+export type CamelToSnakeCase<S extends string> = S extends `${infer T}${infer U}`
+  ? U extends Uncapitalize<U>
+  ? `${T}${CamelToSnakeCase<U>}`
+  : `${T}_${CamelToSnakeCase<Uncapitalize<U>>}`
+  : S;
 
-export type CamelCaseToSnakeCase<T> = {
-  [K in keyof T as SnakeCase<K & string>]: T[K]
+export type ConvertCamelToSnake<T> = {
+  [K in keyof T as CamelToSnakeCase<K & string>]: T[K]
 };
 
 export default class Obj<T extends Record<string, unknown>> {
   constructor(private object: T) { }
 
-  convertToCamel(): SnakeToCamelCase<T> {
+  getOriginal(): T {
+    return this.object;
+  }
+
+  convertToCamel(): ConvertSnakeToCamel<T> {
     const newObject: Record<string, unknown> = {};
     for (const key in this.object) {
       newObject[this.stringToCamel(key)] = this.object[key];
     }
-    return newObject as SnakeToCamelCase<T>;
+    return newObject as ConvertSnakeToCamel<T>;
   }
 
-  convertToSnake(): CamelCaseToSnakeCase<T> {
+  convertToSnake(): ConvertCamelToSnake<T> {
     const newObject: Record<string, unknown> = {};
     for (const key in this.object) {
       newObject[this.stringToSnake(key)] = this.object[key];
     }
-    return newObject as CamelCaseToSnakeCase<T>;
-  }
-
-  original(): T {
-    return this.object;
+    return newObject as ConvertCamelToSnake<T>;
   }
 
   private stringToCamel(input: string): string {

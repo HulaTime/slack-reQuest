@@ -32,7 +32,13 @@ export default class PlainTextInput {
 
   placeholder?: TextObject;
 
-  constructor(actionId: string) {
+  constructor(actionId: string, maxLength?: number) {
+    if (maxLength && maxLength > 3000) {
+      throw new Error('Cannot create plain text input element with max length greater than 3000');
+    }
+    if (maxLength) {
+      this.max_length = maxLength;
+    }
     this.action_id = actionId;
   }
 
