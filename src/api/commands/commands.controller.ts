@@ -1,20 +1,20 @@
 import { Logger } from 'pino';
 
-import QueueDataMapper, { Queue } from '../datamappers/QueueDatamapper';
-import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
-import { MessageIdentifiers, SupportedSlashCommands } from '../common/identifiers';
+import QueueDataMapper, { Queue } from '@Datamappers/QueueDatamapper';
+import { MarkdownTextObject, TextObject } from '@Lib/slack/compositionObjects';
+import { MessageIdentifiers, SupportedSlashCommands } from '@Common/identifiers';
 import {
   ActionBlock, DividerBlock, HeaderBlock, SectionBlock,
-} from '../lib/slack/blocks';
-import { MessagePayload } from '../lib/slack/messagePayloads';
-import { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
-import { SlashCommand } from '../lib/slack/slashCommands';
-import { emojis } from '../common/emojis';
-import Block from '../lib/slack/blocks/Block';
-import { CreateQueueForm } from '../common/messages';
+} from '@Lib/slack/blocks';
+import { MessagePayload } from '@Lib/slack/messagePayloads';
+import { SlackMessagePayload } from '@Lib/slack/messagePayloads/MessagePayload';
+import { SlashCommand } from '@Lib/slack/slashCommands';
+import { emojis } from '@Common/emojis';
+import Block from '@Lib/slack/blocks/Block';
+import { CreateQueueForm } from '@Common/messages';
 import {
   CancelButton , AddReqButton, DeleteQueueButton, ViewReqButton, 
-} from '../common/buttons';
+} from '@Common/buttons';
 
 
 export default class CommandsController {

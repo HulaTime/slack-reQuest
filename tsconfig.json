@@ -17,7 +17,18 @@
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": "./",
+    "paths": {
+      "@Api/*": ["src/api/*"],
+      "@Datamappers/*": ["src/datamappers/*"],
+      "@DB/*": ["src/db/*"],
+      "@Common/*": ["src/common/*"],
+      "@Config/*": ["src/config/*"],
+      "@Constants/*": ["src/constants/*"],
+      "@Lib/*": ["src/lib/*"],
+      "@Middlewares/*": ["src/middlewares/*"]
+    }
   },
   "exclude": [
     "tests",

@@ -1,25 +1,25 @@
 import { Request } from 'express';
 import { Logger } from 'pino';
 
+import QueueDataMapper, { Queue, QueueInsert } from '@Datamappers/QueueDatamapper';
+import RequestDataMapper from '@Datamappers/RequestDatamapper';
 import {
   ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SelectionIdentifiers, 
-} from '../common/identifiers';
-import QueueDataMapper, { Queue, QueueInsert } from '../datamappers/QueueDatamapper';
-import { InteractionPayload, MessagePayload } from '../lib/slack/messagePayloads';
-import HttpReq from '../lib/utils/HttpReq';
-import { MarkdownTextObject, TextObject } from '../lib/slack/compositionObjects';
-import { emojis } from '../common/emojis';
-import { CreateQueueForm } from '../common/messages';
+} from '@Common/identifiers';
+import { InteractionPayload, MessagePayload } from '@Lib/slack/messagePayloads';
+import HttpReq from '@Lib/utils/HttpReq';
+import { MarkdownTextObject, TextObject } from '@Lib/slack/compositionObjects';
+import { emojis } from '@Common/emojis';
+import { CreateQueueForm } from '@Common/messages';
 import {
   ActionBlock, DividerBlock, HeaderBlock, InputBlock, SectionBlock,
-} from '../lib/slack/blocks';
-import { Button, PlainTextInput } from '../lib/slack/elements';
-import RequestDataMapper from '../datamappers/RequestDatamapper';
-import Block from '../lib/slack/blocks/Block';
-import { MAX_QUEUE_REQUEST_LENGTH } from '../../constants/app';
+} from '@Lib/slack/blocks';
+import { Button, PlainTextInput } from '@Lib/slack/elements';
+import Block from '@Lib/slack/blocks/Block';
+import { MAX_QUEUE_REQUEST_LENGTH } from '@Constants/app';
 import {
   AddReqButton, CancelButton, DeleteQueueButton, ViewReqButton,
-} from '../common/buttons';
+} from '@Common/buttons';
 
 export default class InteractionsController {
   private readonly interactionPayload: InteractionPayload;

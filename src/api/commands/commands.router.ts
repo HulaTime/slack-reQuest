@@ -1,8 +1,9 @@
 import { Router } from 'express';
 
-import { SlashCommand } from '../lib/slack/slashCommands';
-
 import CommandsController from './commands.controller';
+
+import { SlashCommand } from '@Lib/slack/slashCommands';
+
 
 const router = Router();
 

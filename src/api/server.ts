@@ -1,10 +1,10 @@
 import { pino } from 'pino';
 
-import { getDbConnection } from '../src/db/init';
-import { LOG_LEVEL } from '../config/app.config';
-import { APP_NAME } from '../constants/app';
-
 import { app } from './app';
+
+import { LOG_LEVEL } from '@Config/app.config';
+import { APP_NAME } from '@Constants/app';
+import { getDbConnection } from '@DB/init';
 
 const logger = pino({
   level: LOG_LEVEL,

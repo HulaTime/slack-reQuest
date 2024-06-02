@@ -3,13 +3,14 @@ import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { pinoHttp } from 'pino-http';
 
-import { LOG_LEVEL } from '../config/app.config';
-import { APP_NAME, X_REQUEST_ID } from '../constants/app';
 
 import commandsRouter from './commands/commands.router';
 import interactionsRouter from './interactions/interactions.router';
 import { verifySlackMessage } from './middlewares/verifySlackMessages';
 import { parseInboundRequest } from './middlewares/parseInboundRequest';
+
+import { APP_NAME, X_REQUEST_ID } from '@Constants/app';
+import { LOG_LEVEL } from '@Config/app.config';
 
 export const app = express();
 

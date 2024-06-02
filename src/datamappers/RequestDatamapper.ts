@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Logger } from 'pino';
 
-import { getDbConnection } from '../db/init';
-import Obj from '../lib/utils/Obj';
+import { getDbConnection } from '@DB/init';
+import Obj from '@Lib/utils/Obj';
 
 export interface Request {
   id: string;

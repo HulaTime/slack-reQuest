@@ -1,13 +1,13 @@
-import { ActionBlock, InputBlock, SectionBlock } from '../lib/slack/blocks';
-import { MarkdownTextObject, OptionObject, TextObject } from '../lib/slack/compositionObjects';
-import { ITextObject } from '../lib/slack/compositionObjects/TextObject';
-import { Button, PlainTextInput, RadioButton } from '../lib/slack/elements';
-import MessagePayload, { SlackMessagePayload } from '../lib/slack/messagePayloads/MessagePayload';
-
 import { CancelButton } from './buttons';
 import {
   ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, SelectionIdentifiers,
 } from './identifiers';
+
+import { ActionBlock, InputBlock, SectionBlock } from '@Lib/slack/blocks';
+import { MarkdownTextObject, OptionObject, TextObject } from '@Lib/slack/compositionObjects';
+import { Button, PlainTextInput, RadioButton } from '@Lib/slack/elements';
+import MessagePayload, { SlackMessagePayload } from '@Lib/slack/messagePayloads/MessagePayload';
+import { ITextObject } from '@Lib/slack/compositionObjects/TextObject';
 
 export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
   const defaultQueueRadioButtons = new RadioButton(SelectionIdentifiers.defaultQueueRadioOption)

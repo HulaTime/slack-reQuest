@@ -3,9 +3,9 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { RequestHandler } from 'express';
 import { pino } from 'pino';
 
-import { X_SLACK_REQUEST_TS, X_SLACK_SIGNATURE } from '../../constants/slack';
-import { LOG_LEVEL, SLACK_SIGNING_SECRET } from '../../config/app.config';
-import { APP_NAME, SLACK_SIGNING_VERSION } from '../../constants/app';
+import { LOG_LEVEL, SLACK_SIGNING_SECRET } from '@Config/app.config';
+import { X_SLACK_REQUEST_TS, X_SLACK_SIGNATURE } from '@Constants/slack';
+import { APP_NAME, SLACK_SIGNING_VERSION } from '@Constants/app';
 
 const logger = pino({
   name: APP_NAME,
