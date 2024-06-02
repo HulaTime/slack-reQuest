@@ -57,7 +57,7 @@ export default class CommandsController {
   }
 
   private async handleListQueuesCommand(): Promise<SlackMessagePayload> {
-    let [personalQueue] = await this.queueDataMapper.list({ userId: this.slashCommand.userId, type: 'user' });
+    let [personalQueue] = await this.queueDataMapper.list({ ownerId: this.slashCommand.userId, type: 'user' });
     if (!personalQueue) {
       const newPersonalQueue = await this.createUserQueue();
       if (newPersonalQueue) {
@@ -108,7 +108,7 @@ export default class CommandsController {
 
       return await this.queueDataMapper.create({
         name: 'My Personal Queue',
-        userId: this.slashCommand.userId,
+        ownerId: this.slashCommand.userId,
         type: 'user',
       });
     } catch (err) {

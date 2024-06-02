@@ -30,6 +30,8 @@
     "nodemon": "^3.0.3",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tspath": "^2.6.8",
     "typescript": "^5.3.3"
   },
   "dependencies": {
@@ -40,7 +42,6 @@
     "pg": "^8.11.3",
     "pino": "^8.19.0",
     "pino-http": "^9.0.0",
-    "supertest": "^6.3.4",
-    "tspath": "^2.6.8"
+    "supertest": "^6.3.4"
   }
 }

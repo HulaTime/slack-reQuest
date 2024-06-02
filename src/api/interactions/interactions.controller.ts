@@ -140,7 +140,7 @@ export default class InteractionsController {
 
     await this.queueDataMapper.delete(JSON.parse(action.value).id);
 
-    const [personalQueue] = await this.queueDataMapper.list({ userId: this.interactionPayload.userId, type: 'user' });
+    const [personalQueue] = await this.queueDataMapper.list({ ownerId: this.interactionPayload.userId, type: 'user' });
 
     const channelQueues = await this.queueDataMapper.list({ channelId: this.interactionPayload.channelId });
 
@@ -219,7 +219,7 @@ export default class InteractionsController {
       description: inputValue,
       queueId: queue.id,
       type: queue.type,
-      userId: queue.userId,
+      ownerId: queue.ownerId,
       channelId: queue.channelId,
       createdById: this.interactionPayload.userId,
       createdByName: this.interactionPayload.userName,
@@ -276,7 +276,7 @@ export default class InteractionsController {
   private async createQueueForInteractingUser(name: string): Promise<Queue> {
     const queueData: QueueInsert = {
       name,
-      userId: this.interactionPayload.userId,
+      ownerId: this.interactionPayload.userId,
       type: 'channel',
       channelId: this.interactionPayload.channelId,
     };

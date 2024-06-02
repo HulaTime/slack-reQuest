@@ -10,7 +10,7 @@ export interface Request {
   description: string;
   queueId: string;
   type: string;
-  userId: string;
+  ownerId: string;
   channelId: string;
   createdById: string;
   createdByName: string;
@@ -21,15 +21,15 @@ export type RequestInsert = {
   description: string;
   queueId: string;
   type: string;
-  userId: string;
+  ownerId: string;
   channelId?: string;
   createdById: string;
   createdByName: string;
 }
 
-type DbRequest = Omit<Request, 'queueId' | 'userId' | 'channelId' | 'createdById' | 'createdByName' | 'createdAt'> & {
+type DbRequest = Omit<Request, 'queueId' | 'ownerId' | 'channelId' | 'createdById' | 'createdByName' | 'createdAt'> & {
   queue_id: string;
-  user_id: string;
+  owner_id: string;
   channel_id: string;
   created_by_id: string;
   created_by_name: string;
@@ -54,7 +54,7 @@ export default class RequestDataMapper {
           description: request.description,
           queue_id: request.queueId,
           type: request.type,
-          user_id: request.userId,
+          owner_id: request.ownerId,
           channel_id: request.channelId,
           created_by_id: request.createdById,
           created_by_name: request.createdByName,

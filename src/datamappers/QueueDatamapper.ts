@@ -8,7 +8,7 @@ import Obj from '@Lib/utils/Obj';
 export interface Queue {
   id: string;
   name: string;
-  userId: string;
+  ownerId: string;
   type: 'user' | 'channel';
   channelId?: string;
   createdAt: Date;
@@ -16,13 +16,13 @@ export interface Queue {
 
 export type QueueInsert = {
   name: string;
-  userId: string;
+  ownerId: string;
   type: 'user' | 'channel';
   channelId?: string;
 }
 
-type DbQueue = Omit<Queue, 'userId' | 'createdAt' | 'channelId'> & {
-  user_id: string;
+type DbQueue = Omit<Queue, 'ownerId' | 'createdAt' | 'channelId'> & {
+  owner_id: string;
   channel_id: string;
   created_at?: Date; 
 }
@@ -43,7 +43,7 @@ export default class QueueDataMapper {
         .insert({
           id: randomUUID(),
           name: queue.name,
-          user_id: queue.userId,
+          owner_id: queue.ownerId,
           type: queue.type,
           channel_id: queue.channelId,
         })
