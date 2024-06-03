@@ -260,7 +260,7 @@ export default class InteractionsController {
       const acceptReqBtn = new Button(new TextObject('Pick up request'), 'primary', ActionIdentifiers.acceptRequest)
         .setValue(JSON.stringify({ requestId: r.id, userId: this.interactionPayload.userId }));
       const rejectReqBtn = new Button(new TextObject('Reject'), 'none', ActionIdentifiers.rejectRequest)
-        .setValue(JSON.stringify({ requestId: r.id }));
+        .setValue(JSON.stringify({ requestId: r.id, userId: this.interactionPayload.userId }));
       blocks.push(new ActionBlock([acceptReqBtn, rejectReqBtn]));
       blocks.push(
       );
@@ -294,8 +294,15 @@ export default class InteractionsController {
   }
 
   private async handleRejectRequest(): Promise<void> {
-    this.logger.info('Handling a rejected request action');
     const action = this.interactionPayload.getActionById(ActionIdentifiers.rejectRequest);
+    const { requestId, userId } = JSON.parse(action!.value!);
+    this.logger.info({ requestId, userId }, 'Handling a reject request action');
+    await this.requestDataMapper.update(requestId, { assignee: userId, status: 'rejected' });
+    const msgPayload = new MessagePayload('Request rejected', []);
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger)
+      .setBody(msgPayload.render());
+    await httpReq.post();
+    return;
   }
 
   private async createQueueForInteractingUser(name: string): Promise<Queue> {
