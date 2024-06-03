@@ -4,7 +4,7 @@ import { Logger } from 'pino';
 import QueueDataMapper, { Queue, QueueInsert } from '@Datamappers/QueueDatamapper';
 import RequestDataMapper from '@Datamappers/RequestDatamapper';
 import {
-  ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SelectionIdentifiers, 
+  ActionIdentifiers, BlockIdentifiers, MessageIdentifiers, SelectionIdentifiers,
 } from '@Common/identifiers';
 import { InteractionPayload, MessagePayload } from '@Lib/slack/messagePayloads';
 import HttpReq from '@Lib/utils/HttpReq';
@@ -65,6 +65,14 @@ export default class InteractionsController {
 
       case ActionIdentifiers.viewRequests: {
         return await this.handleListRequests();
+      }
+
+      case ActionIdentifiers.acceptRequest: {
+        return await this.handleAcceptRequest();
+      }
+
+      case ActionIdentifiers.rejectRequest: {
+        return await this.handleRejectRequest();
       }
 
       default: {
@@ -220,9 +228,8 @@ export default class InteractionsController {
       queueId: queue.id,
       type: queue.type,
       ownerId: queue.ownerId,
-      channelId: queue.channelId,
-      createdById: this.interactionPayload.userId,
-      createdByName: this.interactionPayload.userName,
+      channelId: queue.channelId!,
+      status: 'idle',
     });
 
     const sectionBlock = new SectionBlock(new TextObject('Successfully submitted your request to queue'));
@@ -247,13 +254,14 @@ export default class InteractionsController {
     requests.forEach((r) => {
       blocks.push(
         new SectionBlock(
-          new MarkdownTextObject(`<@${r.createdById}>: ${r.description}`),
+          new MarkdownTextObject(`<@${r.ownerId}>: ${r.description}`),
         ),
       );
-      blocks.push(new ActionBlock([
-        new Button(new TextObject('Pick up request'), 'primary'),
-        new Button(new TextObject('Reject'), 'none'),
-      ]));
+      const acceptReqBtn = new Button(new TextObject('Pick up request'), 'primary', ActionIdentifiers.acceptRequest)
+        .setValue(JSON.stringify({ requestId: r.id, userId: this.interactionPayload.userId }));
+      const rejectReqBtn = new Button(new TextObject('Reject'), 'none', ActionIdentifiers.rejectRequest)
+        .setValue(JSON.stringify({ requestId: r.id }));
+      blocks.push(new ActionBlock([acceptReqBtn, rejectReqBtn]));
       blocks.push(
       );
       blocks.push(new DividerBlock());
@@ -271,6 +279,23 @@ export default class InteractionsController {
     await httpReq.post();
 
     return;
+  }
+
+  private async handleAcceptRequest(): Promise<void> {
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.acceptRequest);
+    const { requestId, userId } = JSON.parse(action!.value!);
+    this.logger.info({ requestId, userId }, 'Handling an accepted request action');
+    await this.requestDataMapper.update(requestId, { assignee: userId, status: 'in_progress' });
+    const msgPayload = new MessagePayload('Request accepted', []);
+    const httpReq = new HttpReq(this.interactionPayload.responseUrl, this.logger)
+      .setBody(msgPayload.render());
+    await httpReq.post();
+    return;
+  }
+
+  private async handleRejectRequest(): Promise<void> {
+    this.logger.info('Handling a rejected request action');
+    const action = this.interactionPayload.getActionById(ActionIdentifiers.rejectRequest);
   }
 
   private async createQueueForInteractingUser(name: string): Promise<Queue> {
