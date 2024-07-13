@@ -10,7 +10,8 @@
     "db:migration:create": "knex --knexfile ./src/db/knexfile.ts migrate:make",
     "db:migration:up": "knex --knexfile ./src/db/knexfile.ts migrate:latest",
     "db:migration:down": "knex --knexfile ./src/db/knexfile.ts migrate:rollback",
-    "start:dev": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' -r tsconfig-paths/register src/api/server.ts",
+    "server:dev": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' -r tsconfig-paths/register src/api/server.ts",
+    "server:start": "nodemon --watch './**/*.ts' --exec 'ts-node -r dotenv/config' -r tsconfig-paths/register src/api/server.ts",
     "test": "jest",
     "npm-update": "ncu -i --format group"
   },
