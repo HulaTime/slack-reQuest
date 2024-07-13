@@ -30,8 +30,6 @@
       "@Middlewares/*": ["src/middlewares/*"]
     }
   },
-  "exclude": [
-    "tests",
-    "jest.config.*"
-  ]
+  "include": ["src"],
+  "exclude": ["**/__tests__/**"]
 }
