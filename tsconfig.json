@@ -21,15 +21,17 @@
     "baseUrl": "./",
     "paths": {
       "@Api/*": ["src/api/*"],
-      "@Datamappers/*": ["src/datamappers/*"],
-      "@DB/*": ["src/db/*"],
+      "@Repos/*": ["src/repositories/*"],
+      "@DB/*": ["database/*"],
       "@Common/*": ["src/common/*"],
       "@Config/*": ["src/config/*"],
       "@Constants/*": ["src/constants/*"],
+      "@Ioc/*": ["src/ioc/*"],
       "@Lib/*": ["src/lib/*"],
-      "@Middlewares/*": ["src/middlewares/*"]
+      "@Middlewares/*": ["src/middlewares/*"],
+      "@Models/*": ["src/models/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "database"],
   "exclude": ["**/__tests__/**"]
 }
