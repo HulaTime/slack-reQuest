@@ -1,10 +1,11 @@
+import 'reflect-metadata';
 import { pino } from 'pino';
 
 import { app } from './app';
 
 import { LOG_LEVEL } from '@Config/app.config';
 import { APP_NAME } from '@Constants/app';
-import { getDbConnection } from '@DB/init';
+import { getDbConnection } from 'database/init';
 
 const logger = pino({
   level: LOG_LEVEL,

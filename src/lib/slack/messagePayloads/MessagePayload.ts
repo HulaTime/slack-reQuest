@@ -1,7 +1,7 @@
 import Block from '../blocks/Block';
 
 export interface IMessagePayload {
-  text: string;
+  text?: string;
   blocks?: Block[];
   thread_ts?: string;
   mrkdwn?: boolean;
@@ -18,9 +18,9 @@ export type SlackMessagePayload = {
 export default class MessagePayload implements IMessagePayload {
   noContent: boolean = false;
 
-  text: string;
+  text?: string;
 
-  blocks: Block[];
+  blocks?: Block[];
 
   replace_original?: 'true' | 'false';
 
@@ -28,14 +28,12 @@ export default class MessagePayload implements IMessagePayload {
 
   delete_original?: boolean;
 
-  constructor(notificationText: string, blocks: Block[]) {
-    this.text = notificationText;
-    this.blocks = blocks;
-  }
-
-  setNoContent(): this {
-    this.noContent = true;
-    return this;
+  constructor(msgOrBlocks?: string | Block[]) {
+    if (typeof msgOrBlocks === 'string') {
+      this.text = msgOrBlocks;
+    } else {
+      this.blocks = msgOrBlocks;
+    }
   }
 
   shouldReplaceOriginal(option: 'true' | 'false'): this {
@@ -55,8 +53,8 @@ export default class MessagePayload implements IMessagePayload {
 
   render(): SlackMessagePayload {
     return {
-      text: this.noContent ? undefined : this.text,
-      blocks: this.blocks.map(block => block.render()),
+      text: this.text,
+      blocks: this.blocks ? this.blocks.map(block => block.render()) : undefined,
       delete_original: this.delete_original,
       replace_original: this.replace_original,
     };

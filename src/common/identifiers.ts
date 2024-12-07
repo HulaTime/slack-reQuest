@@ -1,11 +1,6 @@
-export enum SupportedSlashCommands {
-  createQueue = 'create',
+export enum RequestCommandActions {
+  createQueue = 'create-queue',
   listQueues = 'list',
-}
-
-export enum DefaultQueueTypes {
-  codeReview = 'code-review',
-  release = 'release'
 }
 
 export enum BlockIdentifiers {
@@ -32,8 +27,8 @@ export enum ActionIdentifiers {
   cancel = 'cancel-interaction',
   submitNewQueue = 'submit-new-queue',
   deleteQueue = 'delete-queue',
-  addRequest = 'add-request',
-  submitRequest = 'submit-request',
+  generateRequestForm = 'add-request',
+  newRequestSubmitted = 'submit-request',
   viewRequests = 'view-requests',
   deleteRequest = 'delete-request',
   editRequest = 'edit-request',
@@ -41,17 +36,5 @@ export enum ActionIdentifiers {
   rejectRequest = 'reject-request',
   completedRequest = 'completed-request',
   stopRequest = 'stop-request',
-}
-
-export enum MessageIdentifiers {
-  cancelInteraction = 'cancel-interaction-message',
-
-  selectQueueOwnershipType = 'select-queue-ownership-type-message',
-  selectQueueRequestType = 'select-queue-request-type-message',
-
-  listQueuesResponse = 'list-queues-response-message',
-  selectQueueToView = 'view-queue-message',
-
-  newRequestForm = 'new-request-form-message',
 }
 

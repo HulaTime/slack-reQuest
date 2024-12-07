@@ -12,7 +12,7 @@ declare global {
 }
 
 const parseConfig = {
-  verify: (req: Request, res: Response, buff: Buffer): void => {
+  verify: (req: Request, _: Response, buff: Buffer): void => {
     req.rawBody = buff.toString();
   },
 };

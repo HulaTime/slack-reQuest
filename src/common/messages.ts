@@ -1,24 +1,22 @@
 import { CancelButton } from './buttons';
-import {
-  ActionIdentifiers, BlockIdentifiers, DefaultQueueTypes, MessageIdentifiers, SelectionIdentifiers,
-} from './identifiers';
+import { ActionIdentifiers, BlockIdentifiers, SelectionIdentifiers } from './identifiers';
 
 import { ActionBlock, InputBlock, SectionBlock } from '@Lib/slack/blocks';
 import { MarkdownTextObject, OptionObject, TextObject } from '@Lib/slack/compositionObjects';
 import { Button, PlainTextInput, RadioButton } from '@Lib/slack/elements';
 import MessagePayload, { SlackMessagePayload } from '@Lib/slack/messagePayloads/MessagePayload';
 import { ITextObject } from '@Lib/slack/compositionObjects/TextObject';
+import { QueueModel } from 'src/models/Queue';
 
-export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
-  const defaultQueueRadioButtons = new RadioButton(SelectionIdentifiers.defaultQueueRadioOption)
-    .addOption(new OptionObject(
-      new TextObject('Code Review'),
-      DefaultQueueTypes.codeReview,
-    ))
-    .addOption(new OptionObject(
-      new TextObject('Release'),
-      DefaultQueueTypes.release,
-    ));
+export const CreateQueueForm = (defaultQueues: QueueModel[], alert?: ITextObject): SlackMessagePayload => {
+  const defaultQueueRadioButtons = new RadioButton(SelectionIdentifiers.defaultQueueRadioOption);
+  defaultQueues.forEach(queue => {
+    defaultQueueRadioButtons
+      .addOption(new OptionObject(
+        new TextObject(queue.name),
+        queue.id,
+      ));
+  });
 
   const defaultOptions = new InputBlock(defaultQueueRadioButtons, new TextObject('Default Queues:'), BlockIdentifiers.defaultQueueInput);
 
@@ -44,7 +42,7 @@ export const CreateQueueForm = (alert?: ITextObject): SlackMessagePayload => {
     actionBlock,
   ];
 
-  const msgPayload = new MessagePayload(MessageIdentifiers.selectQueueRequestType, messageBlocks)
+  const msgPayload = new MessagePayload(messageBlocks)
     .setResponseType('ephemeral')
     .shouldReplaceOriginal('true');
 

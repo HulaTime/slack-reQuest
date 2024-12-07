@@ -1,21 +1,22 @@
 import { Router } from 'express';
+import { container } from 'tsyringe';
 
-import InteractionsController from './interactions.controller';
+import { InteractionControllerToken } from '@Ioc/container';
 
 const router = Router();
 
 router.post('/interactions', async (req, res, next) => {
   try {
     const { body, log: logger } = req;
-    logger.info({ body }, 'Inbound request to interactions endpoint');
+    logger.info( 'Inbound request to interactions endpoint',{ body });
 
-    const controller = new InteractionsController(req, logger);
+    const controller = container.resolve(InteractionControllerToken)(req);
     const result = await controller.execute();
-    logger.info({ result }, 'Successfully executed interaction');
+    logger.info( 'Successfully executed interaction',{ result });
 
     res.status(200).json(result);
   } catch (err) {
-    req.log.error({ err }, 'Failed to process create queue request');
+    req.log.error( 'Failed to process create queue request',{ err });
     next(err);
   }
 });

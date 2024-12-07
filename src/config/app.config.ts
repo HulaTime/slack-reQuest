@@ -1,22 +1,40 @@
 import * as env from 'env-var';
-import { LevelWithSilent } from 'pino';
+import { Level } from 'pino';
+import { singleton } from 'tsyringe';
 
-export const LOG_LEVEL: LevelWithSilent = env.get('LOG_LEVEL')
-  .default('info')
-  .asString() as LevelWithSilent;
+@singleton()
+export class AppConfig {
+  readonly appName: string = 'reQuest';
 
-export const SLACK_CLIENT_ID: string = env.get('SLACK_CLIENT_ID')
-  .required()
-  .asString();
+  readonly headers = {
+    requestId: 'x-request-id',
+    slackSignature: 'x-slack-signature',
+    slackRequestTs: 'x-slack-request-timestamp',
+  };
 
-export const SLACK_CLIENT_SECRET: string = env.get('SLACK_CLIENT_SECRET')
-  .required()
-  .asString();
+  readonly appCorrelationIdHeaderName: string = 'x-request-id';
 
-export const SLACK_SIGNING_SECRET: string = env.get('SLACK_SIGNING_SECRET')
-  .required()
-  .asString();
+  readonly queueMaxCharLength: number = 250;
 
-export const SLACK_BOT_USER_TOKEN: string = env.get('SLACK_BOT_USER_TOKEN')
-  .required()
-  .asString();
+  readonly slack = {
+    signingVersion: 'v0',
+    botUserToken: env.get('SLACK_BOT_USER_TOKEN')
+      .required()
+      .asString(),
+    signingSecret: env.get('SLACK_SIGNING_SECRET')
+      .required()
+      .asString(),
+    clientSecret: env.get('SLACK_CLIENT_SECRET')
+      .required()
+      .asString(),
+    clientId: env.get('SLACK_CLIENT_ID')
+      .required()
+      .asString(),
+  };
+
+  readonly logger = {
+    level: env.get('LOG_LEVEL')
+      .default('info')
+      .asString() as Level,
+  };
+}

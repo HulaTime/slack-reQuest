@@ -13,7 +13,7 @@ const config: Config = {
     '**/__tests__/*.(spec|test).[jt]s?(x)',
     '**/?(*.)+(spec|test).[tj]s?(x)',
   ],
-  setupFiles: ['./setup-tests.ts'],
+  setupFilesAfterEnv: ['./tests/setup-tests.ts'],
   testPathIgnorePatterns: [
     '/node_modules/',
   ],

@@ -1,9 +1,9 @@
-import { Logger } from 'pino';
-
 import { SlackTextObject } from '../compositionObjects/TextObject';
-import { ActionIdentifiers, BlockIdentifiers, SelectionIdentifiers } from '../../../common/identifiers';
+import { BlockIdentifiers, SelectionIdentifiers } from '../../../common/identifiers';
 
-export type SlackIteractionAction = {
+import { ILogger } from '@Common/logger/ILogger';
+
+export type SlackInteractionAction = {
   block_id: string;
   action_id: string;
   value?: string;
@@ -44,7 +44,7 @@ export interface SlackInteractionPayload {
     id: string;
     name: string;
   };
-  actions: SlackIteractionAction[];
+  actions: SlackInteractionAction[];
   state: InteractionState;
   container: {
     type: string;
@@ -64,14 +64,13 @@ export default class InteractionPayload {
 
   timestamp: string;
 
-  primaryActions: SlackIteractionAction[];
+  primaryActions: SlackInteractionAction[];
 
   hasMultipleActions: boolean;
 
   responseUrl: string;
 
-  constructor(readonly payload: SlackInteractionPayload, private readonly logger: Logger) {
-    console.log('---------- payload: ----------', JSON.stringify(payload, null, 4));
+  constructor(readonly payload: SlackInteractionPayload, private readonly logger: ILogger) {
     this.userId = this.payload.user.id;
     this.userName = this.payload.user.name;
     this.channelId = this.payload.channel?.id;
@@ -89,10 +88,10 @@ export default class InteractionPayload {
     return this.primaryActions.map(action => action.action_id);
   }
 
-  getActionById(actionId: string): SlackIteractionAction | undefined {
+  getActionById(actionId: string): SlackInteractionAction | undefined {
     const action = this.payload.actions.find(a => a.action_id === actionId);
     if (!action) {
-      this.logger.error({ actionId, payloadActions: this.payload.actions }, 'Could not find an action with the specified id');
+      this.logger.error('Could not find an action with the specified id', { actionId, payloadActions: this.payload.actions });
       return undefined;
     }
     return action;

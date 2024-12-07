@@ -1,22 +1,26 @@
-import { Logger } from 'pino';
+import { z } from 'zod';
 
-export type SlackSlashCommandPayload = {
-  token: string;
-  team_id: string;
-  team_domain: string;
-  channel_id: string;
-  channel_name: string;
-  user_id: string;
-  user_name: string;
-  command: string;
-  text: string;
-  response_url: string;
-  trigger_id: string;
-  api_app_id?: string; // Optional: present if the command is invoked in a workspace where your app is installed
-  enterprise_id?: string; // Optional: present for Enterprise Grid workspaces
-  enterprise_name?: string; // Optional: present for Enterprise Grid workspaces
+import { ILogger } from '@Lib/logger';
+
+export const SlashCommandSchema = z.object({
+  token: z.string(),
+  team_id: z.string(),
+  team_domain: z.string(),
+  channel_id: z.string(),
+  channel_name: z.string(),
+  user_id: z.string(),
+  user_name: z.string(),
+  command: z.string(),
+  text: z.string(),
+  response_url: z.string(),
+  trigger_id: z.string(),
+  api_app_id: z.string().optional(), // Optional: present if the command is invoked in a workspace where your app is installed
+  enterprise_id: z.string().optional(), // Optional: present for Enterprise Grid workspaces
+  enterprise_name: z.string().optional(), // Optional: present for Enterprise Grid workspaces
   // Depending on the command's configuration, additional optional fields might be included. Consider extending this type accordingly.
-};
+});
+
+export type SlackSlashCommandPayload = z.infer<typeof SlashCommandSchema>;
 
 export default class SlashCommand {
   action: string;
@@ -29,19 +33,22 @@ export default class SlashCommand {
 
   channelId: string;
 
-  constructor(private payload: SlackSlashCommandPayload, private readonly logger: Logger) {
-    const isValid = this.isValidSlackSlashCommandPayload(payload);
-    if (!isValid) {
-      this.logger.warn({ isValid, payload }, 'Received invalid slash command payload');
-      throw new Error('Invalid Slash Command');
-    }
-
+  constructor(private payload: SlackSlashCommandPayload) {
     const actionArgs = this.getCommandArgs();
     this.action = actionArgs.action;
     this.args = actionArgs.args;
     this.userId = payload.user_id;
     this.userName = payload.user_name;
     this.channelId = payload.channel_id;
+  }
+
+  static Validate(logger: ILogger, payload: unknown): SlackSlashCommandPayload {
+    const { data, error, success } = SlashCommandSchema.safeParse(payload);
+    if (!success) {
+      logger.warn( 'Received invalid slash command payload', { error, payload });
+      throw error; 
+    }
+    return data; 
   }
 
   getCommand(): string {
@@ -51,37 +58,5 @@ export default class SlashCommand {
   getCommandArgs(): { action: string; args: string } {
     const [, action, , args] = this.payload.text.match(/^(\S+)(\s)?((.+))?$/) ?? [];
     return { action, args };
-  }
-
-  private isValidSlackSlashCommandPayload(payload: unknown): payload is SlackSlashCommandPayload {
-    const isObject = (obj: unknown): obj is Record<string, unknown> =>
-      typeof obj === 'object' && obj !== null;
-
-    const hasStringProperty = (obj: Record<string, unknown>, prop: string): boolean =>
-      typeof obj[prop] === 'string';
-
-    const hasOptionalStringProperty = (obj: Record<string, unknown>, prop: string): boolean =>
-      obj[prop] === undefined || typeof obj[prop] === 'string';
-
-    if (!isObject(payload)) {
-      return false;
-    }
-
-    const requiredProps = ['token', 'team_id', 'team_domain', 'channel_id', 'channel_name', 'user_id', 'user_name', 'command', 'text', 'response_url', 'trigger_id'];
-    const optionalProps = ['enterprise_id', 'enterprise_name', 'api_app_id'];
-
-    for (const prop of requiredProps) {
-      if (!hasStringProperty(payload, prop)) {
-        return false;
-      }
-    }
-
-    for (const prop of optionalProps) {
-      if (!hasOptionalStringProperty(payload, prop)) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

@@ -52,8 +52,6 @@ export class TextObject implements ITextObject {
 export class MarkdownTextObject extends TextObject implements ITextObject {
   type = SlackTextType.markdown;
 
-  emoji?: boolean;
-
   verbatim?: boolean = false;
 
   constructor(text: string) {
