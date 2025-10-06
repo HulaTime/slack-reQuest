@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type RequestStatus string
 
@@ -41,26 +44,38 @@ type RequestRecipient struct {
 	Type RequestRecipientType
 }
 
+func (r *RequestRecipient) Valid() bool {
+	if !r.Type.Valid() || r.ID == "" {
+		return false
+	}
+	return true
+}
+
 type Request struct {
 	ID           string
 	Title        string
 	Description  string
 	AcceptedByID string
 	CreatedByID  string
-	Recipient    RequestRecipient
+	Recipient    *RequestRecipient
 	Status       RequestStatus
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
 
-func NewRequest(requestId string, title string, createdById string) Request {
+func NewRequest(requestId string, title string, createdById string, recipient *RequestRecipient) (Request, error) {
+	if !recipient.Valid() {
+		return Request{}, errors.New("RequestRecipient is not valid")
+	}
+
 	r := Request{
 		ID:          requestId,
 		Title:       title,
 		CreatedByID: createdById,
+		Recipient:   recipient,
 		Status:      RequestPending,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	return r
+	return r, nil
 }

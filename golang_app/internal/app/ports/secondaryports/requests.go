@@ -15,4 +15,3 @@ type ForReadingRequests interface {
 	FindByAcceptedById(ctx context.Context, acceptedById string) ([]*domain.Request, error)
 	FindByRecipient(ctx context.Context, recipient domain.RequestRecipient) ([]*domain.Request, error)
 }
-
