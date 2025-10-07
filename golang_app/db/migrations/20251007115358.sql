@@ -1,7 +1,29 @@
--- Disable the enforcement of foreign-keys constraints
-PRAGMA foreign_keys = off;
--- Create "new_requests" table
-CREATE TABLE `new_requests` (
+-- Create "groups" table
+CREATE TABLE `groups` (
+  `id` varchar NOT NULL,
+  `name` varchar NOT NULL,
+  `description` varchar NULL,
+  `created_by_id` text NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+);
+-- Create index "idx_groups_created_by_id" to table: "groups"
+CREATE INDEX `idx_groups_created_by_id` ON `groups` (`created_by_id`);
+-- Create "queues" table
+CREATE TABLE `queues` (
+  `id` varchar NOT NULL,
+  `name` varchar NOT NULL,
+  `description` varchar NULL,
+  `created_by_id` text NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+);
+-- Create index "idx_queues_created_by_id" to table: "queues"
+CREATE INDEX `idx_queues_created_by_id` ON `queues` (`created_by_id`);
+-- Create "requests" table
+CREATE TABLE `requests` (
   `id` varchar NOT NULL,
   `title` varchar NOT NULL,
   `description` varchar NULL,
@@ -14,12 +36,6 @@ CREATE TABLE `new_requests` (
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
 );
--- Copy rows from old table "requests" to new temporary table "new_requests"
-INSERT INTO `new_requests` (`id`, `title`, `description`, `accepted_by_id`, `created_by_id`, `recipient_id`, `recipient_type`, `status`, `created_at`, `updated_at`) SELECT `id`, `title`, `description`, `accepted_by_id`, `created_by_id`, `recipient_id`, `recipient_type`, `status`, `created_at`, `updated_at` FROM `requests`;
--- Drop "requests" table after copying rows
-DROP TABLE `requests`;
--- Rename temporary table "new_requests" to "requests"
-ALTER TABLE `new_requests` RENAME TO `requests`;
 -- Create index "idx_requests_status" to table: "requests"
 CREATE INDEX `idx_requests_status` ON `requests` (`status`);
 -- Create index "idx_requests_recipient_id" to table: "requests"
@@ -28,5 +44,3 @@ CREATE INDEX `idx_requests_recipient_id` ON `requests` (`recipient_id`);
 CREATE INDEX `idx_requests_created_by_id` ON `requests` (`created_by_id`);
 -- Create index "idx_requests_accepted_by_id" to table: "requests"
 CREATE INDEX `idx_requests_accepted_by_id` ON `requests` (`accepted_by_id`);
--- Enable back the enforcement of foreign-keys constraints
-PRAGMA foreign_keys = on;
