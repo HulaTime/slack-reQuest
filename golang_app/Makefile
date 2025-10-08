@@ -5,7 +5,7 @@
 ARCH ?= amd64 
 
 build:
-	GOARCH=$(ARCH) GOOS=linux go build -o ./bin/get_payment_options-$(ARCH) ./app/handlers/get_payment_option/main.go
+	GOARCH=$(ARCH) GOOS=linux go build -o ./bin/api-$(ARCH) ./cmd/api/main.go
 
 localstack-up:
 	docker-compose up -d
