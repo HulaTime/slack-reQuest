@@ -1,4 +1,13 @@
-.env
-build/
 .claude/
+
+.env
+
+bin/
+build/
+
 db/dev.db
+
+**/.terraform*
+**/terraform.tfstate*
+localstack_providers_override.tf
+terraform-sandbox/
