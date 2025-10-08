@@ -17,16 +17,16 @@ create-tfstate-bucket:
 	aws --endpoint-url=http://localhost:4566 s3 mb s3://terraform-state-bucket 2>/dev/null || true
 
 deploy-localstack: build localstack-up create-tfstate-bucket
-	cd terraform/deployments/local && terraform init
-	cd terraform/deployments/local && terraform apply -auto-approve
+	cd terraform/deployments/local && tofu init
+	cd terraform/deployments/local && tofu apply -auto-approve
 
 deploy-localstack-arm64: localstack-up
 	$(MAKE) build ARCH=arm64
-	cd terraform/deployments/local && terraform init
-	cd terraform/deployments/local && terraform apply -auto-approve
+	cd terraform/deployments/local && tofu init
+	cd terraform/deployments/local && tofu apply -auto-approve
 
 destroy-localstack:
-	cd terraform && terraform destroy -auto-approve
+	cd tofu && tofu destroy -auto-approve
 
 test-unit:
 	@echo "Running unit tests..."

@@ -1,6 +1,4 @@
 terraform {
-  required_version = "~> 1.13"
-
   backend "local" {}
   # backend "s3" {
   #   bucket                      = "terraform-state-bucket"

@@ -16,11 +16,3 @@ provider "aws" {
     tags = local.tags
   }
 }
-
-provider "datadog" {
-  api_key  = "foo"
-  app_key  = "bar"
-  validate = "false"
-}
-
-
