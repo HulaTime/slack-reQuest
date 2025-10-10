@@ -1,5 +1,14 @@
 # Context
 
+## Summary 
+This is a Golang slack application, implementing a hexagonal architecture pattern. The app should allow users to make requests to other slack users,
+channels or custom created "request queues", which can then be accepted or rejected by the receiving user, or members of the receiving channel or queue.
+The custom queues can be created by privileged users, and once created, can be updated and administered by "admin users" of that queue. Requests and
+queues should be viewable and interactable via Slack interactive messages and modal views.
+
+## Project Architecture
+- Adhere to hexagonal (ports & adapters) best practices and patterns.
+
 ## Project Rules
 - Always refer to the context files in .amazonq/rules before performing any action
 - Never leave the project in a broken state unless explicitly permitted
@@ -15,6 +24,7 @@ a particular piece of code has had to be added when the context is too far remov
 ## MCP Rules
 - Always check the mcp tools for guidance when considering answers to CI/CD questions
 - Always check the mcp tools for guidance when considering answers to terraform related questions
+- Always check the context7 mcp first for documentation of 3rd party libraries and packages
 
 ## Analysis Rules
 - Never only analyse one section of a project when trying to understand the codebase. You should sample multiple areas at a minimum.

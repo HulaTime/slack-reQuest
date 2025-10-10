@@ -2,10 +2,9 @@ package primaryports
 
 import (
 	"context"
+	"request/internal/domain"
 )
 
-type NewRequest struct{}
-
 type ForMakingRequests interface {
-	CreateRequest(context.Context, NewRequest) error
+	RespondToNewRequest(context.Context, *domain.Request) error
 }

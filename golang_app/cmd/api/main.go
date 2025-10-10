@@ -1,22 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 
+	"request/internal/adapters/primaryadapters"
 	"request/internal/adapters/secondaryadapters"
+	"request/internal/app/services"
 
 	"github.com/glebarez/sqlite"
+	"github.com/joho/godotenv"
+	"github.com/slack-go/slack"
 	"gorm.io/gorm"
 )
 
 func main() {
-	// Determine if we're in development mode
-	// autoMigrate := os.Getenv("APP_ENV") != "production"
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
 
 	dbPath := "app.db"
-	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
-		dbPath = dbPath
+	if envPath := os.Getenv("DB_PATH"); envPath != "" {
+		dbPath = envPath
 	}
 
 	db, err := gorm.Open(sqlite.Open(dbPath))
@@ -24,15 +31,33 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Initialize repositories
 	requestsWriter := secondaryadapters.NewRequestsWriter(db)
 	requestsReader := secondaryadapters.NewRequestsReader(db)
 
-	// TODO: Initialize services and HTTP handlers
 	_ = requestsWriter
 	_ = requestsReader
 
-	log.Println("Server starting...")
-	// TODO: Start HTTP server
-}
+	slackToken := os.Getenv("SLACK_BOT_TOKEN")
+	if slackToken == "" {
+		log.Fatal("SLACK_BOT_TOKEN environment variable is required")
+	}
 
+	slackClient := slack.New(slackToken)
+	slackViewRenderer := secondaryadapters.NewSlackViewRenderer(slackClient)
+	requestService := services.NewRequestService(slackViewRenderer)
+	slackHandler := primaryadapters.NewSlackHandler(requestService)
+
+	http.HandleFunc("/slack/commands", slackHandler.HandleSlashCommand)
+	http.HandleFunc("/slack/interactions", slackHandler.HandleInteractions)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
+	addr := fmt.Sprintf(":%s", port)
+	log.Printf("Server starting on %s...", addr)
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
+}
