@@ -1,4 +1,4 @@
-package secondaryadapters
+package dbadapter
 
 import (
 	"context"
@@ -138,4 +138,3 @@ func (r *RequestsReader) FindByRecipient(ctx context.Context, recipient domain.R
 
 var _ secondaryports.ForStoringRequests = (*RequestsWriter)(nil)
 var _ secondaryports.ForReadingRequests = (*RequestsReader)(nil)
-

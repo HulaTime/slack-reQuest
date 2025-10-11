@@ -1,7 +1,6 @@
 package primaryadapters
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -27,19 +26,16 @@ func (h *SlackHandler) HandleSlashCommand(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	ctx, cancel := context.WithCancel(r.Context())
 
 	cmd, err := slack.SlashCommandParse(r)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to parse slash command", slog.String("err", err.Error()))
-		cancel()
+		slog.ErrorContext(r.Context(), "Failed to parse slash command", slog.String("err", err.Error()))
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	if cmd.Command != "/request" {
 		http.Error(w, "Unknown command", http.StatusBadRequest)
-		cancel()
 		return
 	}
 
@@ -56,16 +52,14 @@ func (h *SlackHandler) HandleSlashCommand(w http.ResponseWriter, r *http.Request
 }
 
 func (h *SlackHandler) handleNewRequest(w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
-	ctx, cancel := context.WithCancel(
-		loghandlers.AppendLogCtx(r.Context(),
-			slog.GroupAttrs("requestContext", slog.String("cmd", "new"))))
+	ctx := loghandlers.AppendLogCtx(r.Context(),
+		slog.GroupAttrs("requestContext", slog.String("cmd", "new")))
 
 	slog.DebugContext(ctx, "Beginnig to handle new request")
 
 	err := h.requestService.OpenNewRequestForm(ctx, cmd.TriggerID)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to open new request modal: %v", err)
-		cancel()
 
 		w.Header().Set("Content-Type", "application/json")
 		response := map[string]string{

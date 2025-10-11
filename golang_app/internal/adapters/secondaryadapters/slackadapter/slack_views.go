@@ -1,4 +1,4 @@
-package secondaryadapters
+package slackadapter
 
 import (
 	"context"

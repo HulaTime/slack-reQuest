@@ -1,4 +1,4 @@
-package secondaryadapters
+package slackadapter
 
 const (
 	ActionIDRecipientTypeSelect = "recipient_type_select"

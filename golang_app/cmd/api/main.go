@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"request/internal/adapters/primaryadapters"
-	"request/internal/adapters/secondaryadapters"
+	"request/internal/adapters/secondaryadapters/dbadapter"
+	"request/internal/adapters/secondaryadapters/slackadapter"
 	"request/internal/app/services"
 	"request/pkg/loghandlers"
 
@@ -36,8 +37,8 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	requestsWriter := secondaryadapters.NewRequestsWriter(db)
-	requestsReader := secondaryadapters.NewRequestsReader(db)
+	requestsWriter := dbadapter.NewRequestsWriter(db)
+	requestsReader := dbadapter.NewRequestsReader(db)
 
 	_ = requestsWriter
 	_ = requestsReader
@@ -48,7 +49,7 @@ func main() {
 	}
 
 	slackClient := slack.New(slackToken)
-	slackViewRenderer := secondaryadapters.NewSlackViewRenderer(slackClient)
+	slackViewRenderer := slackadapter.NewSlackViewRenderer(slackClient)
 	requestService := services.NewRequestService(slackViewRenderer, requestsWriter)
 	slackHandler := primaryadapters.NewSlackHandler(requestService)
 
@@ -66,3 +67,4 @@ func main() {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
+

@@ -1,11 +1,11 @@
 //go:build integration
 // +build integration
 
-package secondaryadapters_test
+package dbadapter_test
 
 import (
 	"context"
-	"request/internal/adapters/secondaryadapters"
+	"request/internal/adapters/secondaryadapters/dbadapter"
 	"request/internal/domain"
 	"testing"
 
@@ -15,7 +15,7 @@ import (
 
 var cleanupGroupIds []string
 
-func SeedGroups(t *testing.T, db *gorm.DB, groups []*secondaryadapters.GroupDTO) {
+func SeedGroups(t *testing.T, db *gorm.DB, groups []*dbadapter.GroupDTO) {
 	t.Helper()
 
 	for _, dto := range groups {
@@ -34,7 +34,7 @@ func TestGroupWriter(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupGroupIds {
-			db.Delete(secondaryadapters.GroupDTO{ID: id})
+			db.Delete(dbadapter.GroupDTO{ID: id})
 		}
 	})
 
@@ -42,7 +42,7 @@ func TestGroupWriter(t *testing.T) {
 		"test-group-id", "Test Group", "creator-id"
 	cleanupGroupIds = append(cleanupGroupIds, testId)
 
-	gw := secondaryadapters.NewGroupsWriter(db)
+	gw := dbadapter.NewGroupsWriter(db)
 	g := domain.NewGroup(testId, testName)
 	g.CreatedById = testCreatedBy
 	g.Description = "Test Description"
@@ -52,7 +52,7 @@ func TestGroupWriter(t *testing.T) {
 		t.Fatalf("Failed to save a new group: %v", err)
 	}
 
-	var gdto secondaryadapters.GroupDTO
+	var gdto dbadapter.GroupDTO
 	db.First(&gdto, "id = ?", testId)
 
 	AssertEquals(t, testId, gdto.ID)
@@ -73,11 +73,11 @@ func TestGroupReader(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupGroupIds {
-			db.Delete(secondaryadapters.GroupDTO{ID: id})
+			db.Delete(dbadapter.GroupDTO{ID: id})
 		}
 	})
 
-	SeedGroups(t, db, []*secondaryadapters.GroupDTO{
+	SeedGroups(t, db, []*dbadapter.GroupDTO{
 		{
 			ID: "group-1", Name: "Group 1", CreatedById: "creator-1", Description: "First group",
 		},
@@ -89,7 +89,7 @@ func TestGroupReader(t *testing.T) {
 		},
 	})
 
-	gr := secondaryadapters.NewGroupsReader(db)
+	gr := dbadapter.NewGroupsReader(db)
 
 	t.Run("GetById", func(t *testing.T) {
 		t.Run("should return the expected group when the supplied group id exists", func(t *testing.T) {

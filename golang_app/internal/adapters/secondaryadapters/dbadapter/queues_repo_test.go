@@ -1,11 +1,11 @@
 //go:build integration
 // +build integration
 
-package secondaryadapters_test
+package dbadapter_test
 
 import (
 	"context"
-	"request/internal/adapters/secondaryadapters"
+	"request/internal/adapters/secondaryadapters/dbadapter"
 	"request/internal/domain"
 	"testing"
 
@@ -15,7 +15,7 @@ import (
 
 var cleanupQueueIds []string
 
-func SeedQueues(t *testing.T, db *gorm.DB, queues []*secondaryadapters.QueueDTO) {
+func SeedQueues(t *testing.T, db *gorm.DB, queues []*dbadapter.QueueDTO) {
 	t.Helper()
 
 	for _, dto := range queues {
@@ -34,7 +34,7 @@ func TestQueueWriter(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupQueueIds {
-			db.Delete(secondaryadapters.QueueDTO{ID: id})
+			db.Delete(dbadapter.QueueDTO{ID: id})
 		}
 	})
 
@@ -42,7 +42,7 @@ func TestQueueWriter(t *testing.T) {
 		"test-queue-id", "Test Queue", "creator-id"
 	cleanupQueueIds = append(cleanupQueueIds, testId)
 
-	qw := secondaryadapters.NewQueuesWriter(db)
+	qw := dbadapter.NewQueuesWriter(db)
 	q := domain.NewQueue(testId, testName)
 	q.CreatedById = testCreatedBy
 	q.Description = "Test Description"
@@ -52,7 +52,7 @@ func TestQueueWriter(t *testing.T) {
 		t.Fatalf("Failed to save a new queue: %v", err)
 	}
 
-	var qdto secondaryadapters.QueueDTO
+	var qdto dbadapter.QueueDTO
 	db.First(&qdto, "id = ?", testId)
 
 	AssertEquals(t, testId, qdto.ID)
@@ -73,11 +73,11 @@ func TestQueueReader(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupQueueIds {
-			db.Delete(secondaryadapters.QueueDTO{ID: id})
+			db.Delete(dbadapter.QueueDTO{ID: id})
 		}
 	})
 
-	SeedQueues(t, db, []*secondaryadapters.QueueDTO{
+	SeedQueues(t, db, []*dbadapter.QueueDTO{
 		{
 			ID: "queue-1", Name: "Queue 1", CreatedById: "creator-1", Description: "First queue",
 		},
@@ -89,7 +89,7 @@ func TestQueueReader(t *testing.T) {
 		},
 	})
 
-	qr := secondaryadapters.NewQueuesReader(db)
+	qr := dbadapter.NewQueuesReader(db)
 
 	t.Run("GetById", func(t *testing.T) {
 		t.Run("should return the expected queue when the supplied queue id exists", func(t *testing.T) {

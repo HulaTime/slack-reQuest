@@ -1,11 +1,11 @@
 //go:build integration
 // +build integration
 
-package secondaryadapters_test
+package dbadapter_test
 
 import (
 	"context"
-	"request/internal/adapters/secondaryadapters"
+	"request/internal/adapters/secondaryadapters/dbadapter"
 	"request/internal/domain"
 	"testing"
 
@@ -23,7 +23,7 @@ func AssertEquals(t *testing.T, expected any, actual any) {
 	}
 }
 
-func SeedRequests(t *testing.T, db *gorm.DB, requests []*secondaryadapters.RequestDTO) {
+func SeedRequests(t *testing.T, db *gorm.DB, requests []*dbadapter.RequestDTO) {
 	t.Helper()
 
 	for _, dto := range requests {
@@ -42,7 +42,7 @@ func TestRequestWriter(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupIds {
-			db.Delete(secondaryadapters.RequestDTO{ID: id})
+			db.Delete(dbadapter.RequestDTO{ID: id})
 		}
 	})
 
@@ -50,7 +50,7 @@ func TestRequestWriter(t *testing.T) {
 		"testid", "test-request", "createdById", "test-recipient-id", domain.RequestRecipientUser
 	cleanupIds = append(cleanupIds, testId)
 
-	rw := secondaryadapters.NewRequestsWriter(db)
+	rw := dbadapter.NewRequestsWriter(db)
 	r, err := domain.NewRequest(testId, testTitle, testCreatedBy, &domain.RequestRecipient{ID: testRecipientId, Type: testRecipientType})
 	if err != nil {
 		t.Fatalf("Failed to generate a new request struct: %v", err)
@@ -61,7 +61,7 @@ func TestRequestWriter(t *testing.T) {
 		t.Fatalf("Failed to save a new request: %v", err)
 	}
 
-	var rdto secondaryadapters.RequestDTO
+	var rdto dbadapter.RequestDTO
 	db.First(&rdto, "id = ?", testId)
 
 	AssertEquals(t, testId, rdto.ID)
@@ -87,11 +87,11 @@ func TestRequestReader(t *testing.T) {
 
 	t.Cleanup(func() {
 		for _, id := range cleanupIds {
-			db.Delete(secondaryadapters.RequestDTO{ID: id})
+			db.Delete(dbadapter.RequestDTO{ID: id})
 		}
 	})
 
-	SeedRequests(t, db, []*secondaryadapters.RequestDTO{
+	SeedRequests(t, db, []*dbadapter.RequestDTO{
 		{
 			ID: "1", Title: "Request 1", CreatedByID: "tests", RecipientID: "test-r", RecipientType: "user", Status: "pending",
 		},
@@ -100,7 +100,7 @@ func TestRequestReader(t *testing.T) {
 		},
 	})
 
-	rr := secondaryadapters.NewRequestsReader(db)
+	rr := dbadapter.NewRequestsReader(db)
 
 	t.Run("GetById", func(t *testing.T) {
 		t.Run("should return the expected request when the supplied request id exists", func(t *testing.T) {
@@ -138,7 +138,7 @@ func TestRequestReader(t *testing.T) {
 	})
 
 	t.Run("FindByAcceptedById", func(t *testing.T) {
-		SeedRequests(t, db, []*secondaryadapters.RequestDTO{
+		SeedRequests(t, db, []*dbadapter.RequestDTO{
 			{
 				ID: "3", Title: "Request 3", CreatedByID: "other-user", AcceptedByID: "acceptor", RecipientID: "test-r", RecipientType: "user", Status: "accepted",
 			},
@@ -163,7 +163,7 @@ func TestRequestReader(t *testing.T) {
 	})
 
 	t.Run("FindByRecipient", func(t *testing.T) {
-		SeedRequests(t, db, []*secondaryadapters.RequestDTO{
+		SeedRequests(t, db, []*dbadapter.RequestDTO{
 			{
 				ID: "4", Title: "Request 4", CreatedByID: "user1", RecipientID: "queue-1", RecipientType: "queue", Status: "pending",
 			},
