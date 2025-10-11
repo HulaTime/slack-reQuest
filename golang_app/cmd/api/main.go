@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"request/internal/adapters/primaryadapters"
 	"request/internal/adapters/secondaryadapters"
 	"request/internal/app/services"
+	"request/pkg/loghandlers"
 
 	"github.com/glebarez/sqlite"
 	"github.com/joho/godotenv"
@@ -17,6 +19,9 @@ import (
 )
 
 func main() {
+	handler := &loghandlers.ContextLogHandler{Handler: slog.NewJSONHandler(os.Stdout, nil)}
+	slog.SetDefault(slog.New(handler))
+
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
@@ -44,7 +49,7 @@ func main() {
 
 	slackClient := slack.New(slackToken)
 	slackViewRenderer := secondaryadapters.NewSlackViewRenderer(slackClient)
-	requestService := services.NewRequestService(slackViewRenderer)
+	requestService := services.NewRequestService(slackViewRenderer, requestsWriter)
 	slackHandler := primaryadapters.NewSlackHandler(requestService)
 
 	http.HandleFunc("/slack/commands", slackHandler.HandleSlashCommand)

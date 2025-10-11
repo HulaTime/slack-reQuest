@@ -6,5 +6,8 @@ import (
 )
 
 type ForHandlingRequests interface {
-	SendRequestForm(context.Context, *domain.Request) error
+	OpenNewRequestForm(ctx context.Context, triggerId string) error
+	CreateRequest(ctx context.Context, request *domain.Request) error
+	UpdateRequest(ctx context.Context, request *domain.Request) error
+	DeleteRequest(ctx context.Context, requestId string) error
 }
