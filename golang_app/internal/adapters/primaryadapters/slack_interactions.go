@@ -1,11 +1,10 @@
 package primaryadapters
 
 import (
-	"encoding/json"
-	"io"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
-	"request/internal/adapters/secondaryadapters"
+	"request/internal/adapters/secondaryadapters/slackadapter"
 
 	"github.com/slack-go/slack"
 )
@@ -16,43 +15,34 @@ func (h *SlackHandler) HandleInteractions(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	interaction, err := slack.InteractionCallbackParse(r)
 	if err != nil {
-		log.Printf("Failed to read request body: %v", err)
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	var payload slack.InteractionCallback
-	if err := json.Unmarshal([]byte(body), &payload); err != nil {
-		log.Printf("Failed to parse interaction payload: %v", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
-	switch payload.Type {
+	switch interaction.Type {
 	case slack.InteractionTypeBlockActions:
-		h.handleBlockActions(w, r, &payload)
+		h.handleBlockActions(w, r, &interaction)
 	case slack.InteractionTypeViewSubmission:
-		h.handleViewSubmission(w, r, &payload)
+		h.handleViewSubmission(w, r, &interaction)
 	default:
-		log.Printf("Unknown interaction type: %s", payload.Type)
+		slog.WarnContext(r.Context(), "Unknown interaction type", slog.String("interactionType", string(interaction.Type)))
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
 func (h *SlackHandler) handleBlockActions(w http.ResponseWriter, r *http.Request, payload *slack.InteractionCallback) {
 	for _, action := range payload.ActionCallback.BlockActions {
-		log.Printf("Block action: %s, value: %v", action.ActionID, action.SelectedOption)
+		slog.InfoContext(r.Context(), fmt.Sprintf("Block action: %s, value: %v", action.ActionID, action.SelectedOption))
 
 		switch action.ActionID {
-		case secondaryadapters.ActionIDRecipientTypeSelect:
+		case slackadapter.ActionIDRecipientTypeSelect:
 			if action.SelectedOption.Value != "" {
-				log.Printf("User selected recipient type: %s", action.SelectedOption.Value)
+				slog.InfoContext(r.Context(), fmt.Sprintf("User selected recipient type: %s", action.SelectedOption.Value))
 			}
 		default:
-			log.Printf("Unhandled action: %s", action.ActionID)
+			slog.WarnContext(r.Context(), fmt.Sprintf("Unhandled action: %s", action.ActionID))
 		}
 	}
 
@@ -60,7 +50,7 @@ func (h *SlackHandler) handleBlockActions(w http.ResponseWriter, r *http.Request
 }
 
 func (h *SlackHandler) handleViewSubmission(w http.ResponseWriter, r *http.Request, payload *slack.InteractionCallback) {
-	log.Printf("View submission received: %+v", payload.View.State.Values)
+	slog.InfoContext(r.Context(), fmt.Sprintf("View submission received: %+v", payload.View.State.Values))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
