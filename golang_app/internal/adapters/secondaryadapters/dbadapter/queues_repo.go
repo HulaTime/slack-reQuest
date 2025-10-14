@@ -2,6 +2,8 @@ package dbadapter
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"request/internal/app/ports/secondaryports"
 	"request/internal/domain"
@@ -10,13 +12,43 @@ import (
 	"gorm.io/gorm"
 )
 
+type StringSlice []string
+
+func (s StringSlice) Value() (driver.Value, error) {
+	if s == nil {
+		return "[]", nil
+	}
+	return json.Marshal(s)
+}
+
+func (s *StringSlice) Scan(value interface{}) error {
+	if value == nil {
+		*s = []string{}
+		return nil
+	}
+
+	var data []byte
+	switch v := value.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return fmt.Errorf("unsupported type for StringSlice: %T", value)
+	}
+
+	return json.Unmarshal(data, s)
+}
+
 type QueueDTO struct {
-	ID          string    `gorm:"not null;primaryKey;type:varchar;size:50"`
-	Name        string    `gorm:"not null;type:varchar;size:255"`
-	Description string    `gorm:"type:varchar;size:255"`
-	CreatedById string    `gorm:"not null;index"`
-	CreatedAt   time.Time `gorm:"not null"`
-	UpdatedAt   time.Time `gorm:"not null"`
+	ID          string      `gorm:"not null;primaryKey;type:varchar;size:50"`
+	Name        string      `gorm:"not null;type:varchar;size:255"`
+	Description string      `gorm:"type:varchar;size:255"`
+	CreatedById string      `gorm:"not null;index"`
+	AdminIds    StringSlice `gorm:"type:json"`
+	MemberIds   StringSlice `gorm:"type:json"`
+	CreatedAt   time.Time   `gorm:"not null"`
+	UpdatedAt   time.Time   `gorm:"not null"`
 }
 
 func (QueueDTO) TableName() string {
@@ -29,6 +61,8 @@ func (dto *QueueDTO) ToDomain() *domain.Queue {
 		Name:        dto.Name,
 		Description: dto.Description,
 		CreatedById: dto.CreatedById,
+		AdminIds:    []string(dto.AdminIds),
+		MemberIds:   []string(dto.MemberIds),
 		CreatedAt:   dto.CreatedAt,
 		UpdatedAt:   dto.UpdatedAt,
 	}
@@ -40,6 +74,8 @@ func NewQueueDTO(queue *domain.Queue) *QueueDTO {
 		Name:        queue.Name,
 		Description: queue.Description,
 		CreatedById: queue.CreatedById,
+		AdminIds:    StringSlice(queue.AdminIds),
+		MemberIds:   StringSlice(queue.MemberIds),
 		CreatedAt:   queue.CreatedAt,
 		UpdatedAt:   queue.UpdatedAt,
 	}
@@ -55,7 +91,7 @@ func NewQueuesWriter(db *gorm.DB) *QueuesWriter {
 
 func (w *QueuesWriter) Save(ctx context.Context, queue *domain.Queue) error {
 	dto := NewQueueDTO(queue)
-	if err := w.db.WithContext(ctx).Create(dto).Error; err != nil {
+	if err := w.db.WithContext(ctx).Save(dto).Error; err != nil {
 		return fmt.Errorf("failed to save queue: %w", err)
 	}
 	return nil

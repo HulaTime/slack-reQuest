@@ -79,3 +79,72 @@ func NewRequest(requestId string, title string, createdById string, recipient *R
 	}
 	return r, nil
 }
+
+func (r *Request) Accept(userId string) error {
+	if r.Status != RequestPending {
+		return errors.New("request can only be accepted when in pending status")
+	}
+
+	if r.CreatedByID == userId {
+		return errors.New("request creator cannot accept their own request")
+	}
+
+	r.Status = RequestAccepted
+	r.AcceptedByID = userId
+	r.UpdatedAt = time.Now()
+	return nil
+}
+
+func (r *Request) Reject() error {
+	if r.Status != RequestPending {
+		return errors.New("request can only be rejected when in pending status")
+	}
+
+	r.Status = RequestRejected
+	r.UpdatedAt = time.Now()
+	return nil
+}
+
+func (r *Request) Complete() error {
+	if r.Status != RequestAccepted {
+		return errors.New("request can only be completed when in accepted status")
+	}
+
+	r.Status = RequestCompleted
+	r.UpdatedAt = time.Now()
+	return nil
+}
+
+func (r *Request) CanBeRespondedToBy(userId string, queueAdminIds []string, queueMemberIds []string) bool {
+	if r.CreatedByID == userId {
+		return false
+	}
+
+	switch r.Recipient.Type {
+	case RequestRecipientUser:
+		return r.Recipient.ID == userId
+	case RequestRecipientQueue:
+		for _, adminId := range queueAdminIds {
+			if adminId == userId {
+				return true
+			}
+		}
+		for _, memberId := range queueMemberIds {
+			if memberId == userId {
+				return true
+			}
+		}
+		return false
+	case RequestRecipientGroup:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *Request) CanBeCompletedBy(userId string) bool {
+	if r.Status != RequestAccepted {
+		return false
+	}
+	return r.AcceptedByID == userId || r.CreatedByID == userId
+}

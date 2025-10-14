@@ -72,7 +72,7 @@ func NewRequestsWriter(db *gorm.DB) *RequestsWriter {
 
 func (w *RequestsWriter) Save(ctx context.Context, request *domain.Request) error {
 	dto := NewRequestDTO(request)
-	if err := w.db.WithContext(ctx).Create(dto).Error; err != nil {
+	if err := w.db.WithContext(ctx).Save(dto).Error; err != nil {
 		return fmt.Errorf("failed to save request: %w", err)
 	}
 	return nil

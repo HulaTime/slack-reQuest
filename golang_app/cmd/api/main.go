@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"request/internal/adapters/primaryadapters"
+	slackapiadapter "request/internal/adapters/primaryadapters/slack_api_adapter"
 	"request/internal/adapters/secondaryadapters/dbadapter"
 	"request/internal/adapters/secondaryadapters/slackadapter"
 	"request/internal/app/services"
@@ -39,9 +39,8 @@ func main() {
 
 	requestsWriter := dbadapter.NewRequestsWriter(db)
 	requestsReader := dbadapter.NewRequestsReader(db)
-
-	_ = requestsWriter
-	_ = requestsReader
+	queuesWriter := dbadapter.NewQueuesWriter(db)
+	queuesReader := dbadapter.NewQueuesReader(db)
 
 	slackToken := os.Getenv("SLACK_BOT_TOKEN")
 	if slackToken == "" {
@@ -50,8 +49,21 @@ func main() {
 
 	slackClient := slack.New(slackToken)
 	slackViewRenderer := slackadapter.NewSlackViewRenderer(slackClient)
+	slackMessenger := slackadapter.NewSlackMessenger(slackClient)
+
 	requestService := services.NewRequestService(slackViewRenderer, requestsWriter)
-	slackHandler := primaryadapters.NewSlackHandler(requestService)
+	queueService := services.NewQueueService(queuesWriter, queuesReader, slackViewRenderer)
+	requestResponseService := services.NewRequestResponseService(
+		requestsWriter,
+		requestsReader,
+		queuesReader,
+		slackMessenger,
+	)
+
+	_ = queueService
+	_ = requestResponseService
+
+	slackHandler := slackapiadapter.NewSlackHandler(requestService, slackViewRenderer)
 
 	http.HandleFunc("/slack/commands", slackHandler.HandleSlashCommand)
 	http.HandleFunc("/slack/interactions", slackHandler.HandleInteractions)
@@ -67,4 +79,3 @@ func main() {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
-
