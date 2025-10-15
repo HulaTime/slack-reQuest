@@ -46,7 +46,10 @@ func (h *SlackHandler) HandleSlashCommand(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ctx := loghandlers.AppendLogCtx(r.Context(), slog.String("requestCommand", cmd.Command+cmd.Text))
+	ctx := loghandlers.AppendLogCtx(r.Context(),
+		slog.String("requestCommand", cmd.Command+" "+cmd.Text),
+		slog.String("triggerId", cmd.TriggerID),
+	)
 
 	switch cmd.Text {
 	case "":
@@ -58,7 +61,7 @@ func (h *SlackHandler) HandleSlashCommand(w http.ResponseWriter, r *http.Request
 	case "manage-queue":
 		h.handleNewRequest(ctx, w, r, cmd)
 	case "list-queues":
-		h.handleNewRequest(ctx, w, r, cmd)
+		h.handleListQueus(ctx, w, r, cmd)
 	case "delete-queues":
 		h.handleNewRequest(ctx, w, r, cmd)
 	default:
@@ -83,9 +86,13 @@ func (h *SlackHandler) handleNoArgs(ctx context.Context, w http.ResponseWriter, 
 
 func (h *SlackHandler) handleNewQueue(ctx context.Context, w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
 	slog.DebugContext(ctx, "Handling new queue command")
-
 	h.viewRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
+	return
+}
 
+func (h *SlackHandler) handleListQueues(ctx context.Context, w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
+	slog.DebugContext(ctx, "Handling list queues command")
+	h.viewRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
 	return
 }
 
@@ -147,7 +154,7 @@ func (h *SlackHandler) handleBlockActions(w http.ResponseWriter, r *http.Request
 					slog.String("recipientType", recipientType),
 					slog.String("viewID", payload.View.ID))
 
-				err := h.viewRenderer.UpdateRequestFormWithRecipient(ctx, payload.View.ID, recipientType)
+				err := h.viewRenderer.UpdateRequestFormWithRecipient(ctx, payload.View.ID, slackadapter.RequestRecipientType(recipientType))
 				if err != nil {
 					slog.ErrorContext(ctx, "Failed to update request form",
 						slog.String("err", err.Error()))

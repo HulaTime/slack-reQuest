@@ -10,6 +10,86 @@ reQuest allows users to:
 - Create and administer custom request queues (privileged users only)
 - Interact with requests via Slack interactive messages and modal views
 
+## Business Rules
+
+### Request Types & Routing
+Users can create requests targeted at three recipient types:
+1. **Individual Users**: Request sent as direct message (DM) to the specified user
+2. **Channels**: Request posted as message in the specified channel (visible to all channel members)
+3. **Queues**: Request posted as message in the queue's associated channel (visible to all channel members)
+
+### Queues
+Queues are channel-scoped work backlogs with role-based access control.
+
+**Core Properties:**
+- Each queue MUST be associated with exactly one Slack channel (ChannelId)
+- Queues can be created from any channel using `/request new-queue`
+- Queue visibility and filtering are scoped to the associated channel
+- Multiple queues can exist within the same channel
+
+**Roles & Permissions:**
+- **Creator**: User who created the queue (automatically becomes an admin, cannot be removed)
+- **Admins**: Can modify queue settings, manage roles, and accept requests
+- **Members**: Can accept requests from the queue (cannot modify settings)
+- **Channel Members (Non-Queue-Members)**: Can VIEW requests (read-only for backlog transparency)
+
+### Request Lifecycle
+
+**States:**
+1. **Pending**: Initial state, awaiting acceptance
+2. **Accepted**: A user has taken ownership (assigned to AcceptedByID)
+3. **Rejected**: Request was declined (requires a reason)
+4. **Completed**: Request was fulfilled (terminal state)
+
+**Transition Rules:**
+- Pending → Accepted (by authorized recipient)
+- Pending → Rejected (by authorized recipient, with reason)
+- Accepted → Completed (by acceptor OR original requester)
+- Accepted → Rejected (by acceptor OR original requester, with reason)
+- Creator cannot accept their own request
+- First-come-first-served (no multiple acceptances)
+
+### Authorization Model
+
+**For User Recipients:**
+- Only the specified user can accept/reject the request
+
+**For Channel Recipients:**
+- Any member of the channel can accept/reject the request
+
+**For Queue Recipients:**
+- **Admins & Members**: Can accept/reject requests
+- **Channel members (non-queue-members)**: Can VIEW requests (read-only)
+- **Non-channel members**: Cannot view or interact
+
+**For Completion:**
+- Request acceptor OR original requester can complete/reject
+- No one else can complete/reject
+
+### Notifications
+
+**Request Created:**
+- User recipient: DM to user
+- Channel recipient: Message in channel
+- Queue recipient: Message in queue's associated channel
+
+**Request Accepted:**
+- DM to original requester: "Your request '{title}' has been accepted by {user}"
+
+**Request Rejected:**
+- DM to original requester: "Your request '{title}' has been rejected. Reason: {reason}"
+
+**Request Completed:**
+- DM to stakeholders (requester and acceptor): "Request '{title}' has been completed"
+
+### Queue Discovery
+
+**List Queues Command (`/request list-queues`):**
+- Shows ONLY queues where ChannelId matches the channel the command was run from
+- Displays queues as a dropdown selector
+- When a queue is selected → displays all pending and accepted requests
+- Completed and rejected requests are hidden from the list
+
 ## Architecture
 
 The application follows **hexagonal (ports & adapters) architecture**:

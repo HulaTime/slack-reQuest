@@ -22,18 +22,18 @@ func (h ContextLogHandler) Handle(ctx context.Context, r slog.Record) error {
 	return h.Handler.Handle(ctx, r)
 }
 
-func AppendLogCtx(parentCtx context.Context, attr slog.Attr) context.Context {
+func AppendLogCtx(parentCtx context.Context, attrs ...slog.Attr) context.Context {
 	if parentCtx == nil {
 		parentCtx = context.Background()
 	}
 
 	if v, ok := parentCtx.Value(slogFields{}).([]slog.Attr); ok {
-		v = append(v, attr)
+		v = append(v, attrs...)
 		return context.WithValue(parentCtx, slogFields{}, v)
 	}
 
 	v := []slog.Attr{}
-	v = append(v, attr)
+	v = append(v, attrs...)
 	return context.WithValue(parentCtx, slogFields{}, v)
 }
 

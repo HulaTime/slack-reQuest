@@ -3,6 +3,7 @@ package slackadapter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"request/internal/app/ports/secondaryports"
 	"request/internal/domain"
 
@@ -14,6 +15,13 @@ const (
 	NO_EMOJI     = false
 	USE_VERBATIM = true
 	NOT_VERBATIM = false
+)
+
+type RequestRecipientType string
+
+const (
+	USER_REQUEST_RECIPIENT  RequestRecipientType = "user"
+	QUEUE_REQUEST_RECIPIENT RequestRecipientType = "queue"
 )
 
 type SlackViewRenderer struct {
@@ -28,22 +36,10 @@ func NewSlackViewRenderer(client *slack.Client) *SlackViewRenderer {
 
 func (r *SlackViewRenderer) RenderRequestForm(ctx context.Context, triggerId string, view secondaryports.RequestFormView) error {
 	blocks := r.buildRequestFormBlocks("", view.RecipientTypeOptions)
+	modalRequest := newModalViewRequest(CallbackIDRequestForm, "Create New Request", false)
+	modalRequest.Blocks.BlockSet = append(modalRequest.Blocks.BlockSet, blocks.BlockSet...)
 
-	modalRequest := slack.ModalViewRequest{
-		Type:       slack.VTModal,
-		CallbackID: CallbackIDRequestForm,
-		Title: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Create New Request",
-		},
-		Close: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Cancel",
-		},
-		Blocks: blocks,
-	}
-
-	_, err := r.client.OpenView(triggerId, modalRequest)
+	_, err := r.client.OpenView(triggerId, *modalRequest)
 	if err != nil {
 		return fmt.Errorf("failed to open request modal: %w", err)
 	}
@@ -51,40 +47,19 @@ func (r *SlackViewRenderer) RenderRequestForm(ctx context.Context, triggerId str
 	return nil
 }
 
-func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, viewID, recipientType string) error {
+func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, viewID string, recipientType RequestRecipientType) error {
 	options := []secondaryports.RecipientTypeOption{
-		{Value: "user", Label: "User"},
+		{Value: string(USER_REQUEST_RECIPIENT), Label: "User"},
 		{Value: "channel", Label: "Channel"},
-		{Value: "queue", Label: "Queue"},
+		{Value: string(QUEUE_REQUEST_RECIPIENT), Label: "Queue"},
 	}
 
 	blocks := r.buildRequestFormBlocks(recipientType, options)
 
-	submitEnabled := recipientType != ""
-	var submit *slack.TextBlockObject
-	if submitEnabled {
-		submit = &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Submit",
-		}
-	}
+	modalRequest := newModalViewRequest(CallbackIDRequestForm, "Create New Request", recipientType != "")
+	modalRequest.Blocks.BlockSet = append(modalRequest.Blocks.BlockSet, blocks.BlockSet...)
 
-	modalRequest := slack.ModalViewRequest{
-		Type:       slack.VTModal,
-		CallbackID: CallbackIDRequestForm,
-		Title: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Create New Request",
-		},
-		Close: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Cancel",
-		},
-		Submit: submit,
-		Blocks: blocks,
-	}
-
-	_, err := r.client.UpdateView(modalRequest, "", "", viewID)
+	_, err := r.client.UpdateView(*modalRequest, "", "", viewID)
 	if err != nil {
 		return fmt.Errorf("failed to update request modal: %w", err)
 	}
@@ -92,7 +67,7 @@ func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, 
 	return nil
 }
 
-func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType string, recipientTypeOptions []secondaryports.RecipientTypeOption) slack.Blocks {
+func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType RequestRecipientType, recipientTypeOptions []secondaryports.RecipientTypeOption) slack.Blocks {
 	blocks := []slack.Block{}
 
 	blocks = append(blocks, slack.NewSectionBlock(
@@ -115,7 +90,7 @@ func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType string,
 
 	if selectedRecipientType != "" {
 		for _, opt := range options {
-			if opt.Value == selectedRecipientType {
+			if opt.Value == string(selectedRecipientType) {
 				recipientTypeSelect.InitialOption = opt
 				break
 			}
@@ -125,40 +100,11 @@ func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType string,
 	blocks = append(blocks, slack.NewActionBlock(BlockIDRecipientTypeAction, recipientTypeSelect))
 
 	if selectedRecipientType == "user" {
-		userSelect := slack.NewOptionsSelectBlockElement(
-			slack.OptTypeUser,
-			slack.NewTextBlockObject(slack.PlainTextType, "Choose a user", NO_EMOJI, NOT_VERBATIM),
-			ActionIDUserSelect,
-		)
-		blocks = append(blocks, slack.NewInputBlock(
-			BlockIDUserSelect,
-			slack.NewTextBlockObject(slack.PlainTextType, "Select User", NO_EMOJI, NOT_VERBATIM),
-			nil,
-			userSelect,
-		))
+		blocks = append(blocks, newSelectUserBlock(BlockIDUserSelect, ActionIDUserSelect))
 	} else if selectedRecipientType == "channel" {
-		channelSelect := slack.NewOptionsSelectBlockElement(
-			slack.OptTypeChannels,
-			slack.NewTextBlockObject(slack.PlainTextType, "Choose a channel", NO_EMOJI, NOT_VERBATIM),
-			ActionIDChannelSelect,
-		)
-		blocks = append(blocks, slack.NewInputBlock(
-			BlockIDChannelSelect,
-			slack.NewTextBlockObject(slack.PlainTextType, "Select Channel", NO_EMOJI, NOT_VERBATIM),
-			nil,
-			channelSelect,
-		))
+		blocks = append(blocks, newSelectChannelBlock("Select a channel", BlockIDChannelSelect, ActionIDChannelSelect))
 	} else if selectedRecipientType == "queue" {
-		blocks = append(blocks, slack.NewInputBlock(
-			BlockIDQueueSelect,
-			slack.NewTextBlockObject(slack.PlainTextType, "Select Queue", NO_EMOJI, NOT_VERBATIM),
-			nil,
-			slack.NewOptionsSelectBlockElement(
-				slack.OptTypeStatic,
-				slack.NewTextBlockObject(slack.PlainTextType, "Choose a queue", NO_EMOJI, NOT_VERBATIM),
-				ActionIDQueueSelect,
-			),
-		))
+		slog.Error("Not implemented")
 	}
 
 	if selectedRecipientType != "" {
@@ -190,76 +136,15 @@ func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType string,
 }
 
 func (r *SlackViewRenderer) RenderQueueForm(ctx context.Context, triggerId string, view secondaryports.QueueFormView) error {
-	blocks := []slack.Block{}
+	channelSelectBlock := newSelectChannelBlock("Choose a channel to create the queue in...", BlockIDQueueChannel, ActionIDQueueChannelSelect)
+	queueTitleBlock := newTextInputBlock("Title", "Enter queue title...", BlockIDQueueName, ActionIDQueueName)
+	descriptionBlock := newMultilineTextInputBlock("Description", "Enter queue description...", BlockIDQueueDescription, ActionIDQueueDescription)
+	queueAdminsBlock := newMultiUserSelectBlock("Select queue admins", "Select users to manage queue...", BlockIDQueueAdmins, ActionIDQueueAdminsSelect)
 
-	channelSelectElement := slack.NewOptionsSelectBlockElement(
-		slack.OptTypeChannels,
-		slack.NewTextBlockObject(slack.PlainTextType, "Choose channel", NO_EMOJI, NOT_VERBATIM),
-		ActionIDQueueChannelSelect,
-	)
-	channelSelectBlock := slack.NewInputBlock(
-		BlockIDQueueChannel,
-		slack.NewTextBlockObject(slack.PlainTextType, "Choose a channel to create the queue in...", NO_EMOJI, NOT_VERBATIM),
-		nil,
-		channelSelectElement,
-	)
+	modalRequest := newModalViewRequest(CallbackIDQueueForm, "Create New Queue", true)
+	modalRequest.Blocks.BlockSet = append(modalRequest.Blocks.BlockSet, []slack.Block{channelSelectBlock, queueTitleBlock, descriptionBlock, queueAdminsBlock}...)
 
-	queueTitleBlock := slack.NewInputBlock(
-		BlockIDQueueName,
-		slack.NewTextBlockObject(slack.PlainTextType, "Title", NO_EMOJI, NOT_VERBATIM),
-		nil,
-		slack.NewPlainTextInputBlockElement(
-			slack.NewTextBlockObject(slack.PlainTextType, "Enter queue title", NO_EMOJI, NOT_VERBATIM),
-			ActionIDQueueName,
-		),
-	)
-
-	descriptionInput := slack.NewPlainTextInputBlockElement(
-		slack.NewTextBlockObject(slack.PlainTextType, "Enter queue description", NO_EMOJI, NOT_VERBATIM),
-		ActionIDQueueDescription,
-	)
-	descriptionInput.Multiline = true
-
-	descriptionBlock := slack.NewInputBlock(
-		BlockIDQueueDescription,
-		slack.NewTextBlockObject(slack.PlainTextType, "Description", NO_EMOJI, NOT_VERBATIM),
-		nil,
-		descriptionInput,
-	)
-
-	queueAdminsSelect := slack.NewOptionsMultiSelectBlockElement(
-		slack.MultiOptTypeUser,
-		slack.NewTextBlockObject(slack.PlainTextType, "Select queue admins", NO_EMOJI, NOT_VERBATIM),
-		ActionIDQueueAdminsSelect,
-	)
-	queueAdminsBlock := slack.NewInputBlock(
-		BlockIDQueueAdmins,
-		slack.NewTextBlockObject(slack.PlainTextType, "Queue Admins", NO_EMOJI, NOT_VERBATIM),
-		slack.NewTextBlockObject(slack.PlainTextType, "Select users who can manage this queue and accept requests", NO_EMOJI, NOT_VERBATIM),
-		queueAdminsSelect,
-	)
-
-	blocks = append(blocks, channelSelectBlock, queueTitleBlock, descriptionBlock, queueAdminsBlock)
-
-	modalRequest := slack.ModalViewRequest{
-		Type:       slack.VTModal,
-		CallbackID: CallbackIDQueueForm,
-		Title: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Create New Queue",
-		},
-		Close: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Cancel",
-		},
-		Blocks: slack.Blocks{BlockSet: blocks},
-		Submit: &slack.TextBlockObject{
-			Type: slack.PlainTextType,
-			Text: "Submit",
-		},
-	}
-
-	_, err := r.client.OpenView(triggerId, modalRequest)
+	_, err := r.client.OpenView(triggerId, *modalRequest)
 	if err != nil {
 		fmt.Println("err", err)
 		return fmt.Errorf("failed to open request modal: %w", err)

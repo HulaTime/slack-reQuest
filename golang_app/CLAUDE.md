@@ -1,10 +1,121 @@
 # Context
 
-## Summary 
+## Summary
 This is a Golang slack application, implementing a hexagonal architecture pattern. The app should allow users to make requests to other slack users,
 channels or custom created "request queues", which can then be accepted or rejected by the receiving user, or members of the receiving channel or queue.
 The custom queues can be created by privileged users, and once created, can be updated and administered by "admin users" of that queue. Requests and
 queues should be viewable and interactable via Slack interactive messages and modal views.
+
+## Business Requirements
+
+### Request Types & Routing
+Users can create requests targeted at three recipient types:
+1. **Individual Users**: Request sent as direct message (DM) to the specified user
+2. **Channels**: Request posted as message in the specified channel (visible to all channel members)
+3. **Queues**: Request posted as message in the queue's associated channel (visible to all channel members)
+
+### Queues
+Queues are channel-scoped work backlogs with role-based access control.
+
+**Core Properties:**
+- Each queue MUST be associated with exactly one Slack channel (ChannelId)
+- Queues can be created from any channel using `/request new-queue`
+- Queue visibility and filtering are scoped to the associated channel
+- Multiple queues can exist within the same channel
+
+**Roles & Permissions:**
+- **Creator**: User who created the queue
+  - Automatically becomes an admin
+  - Cannot be removed as admin
+  - Can perform all admin and member actions
+
+- **Admins**: Users designated to manage the queue
+  - Can modify queue settings (name, description)
+  - Can add/remove other admins
+  - Can add/remove members
+  - Can accept requests from the queue
+
+- **Members**: Users designated as request handlers/workers
+  - Can accept requests from the queue
+  - Cannot modify queue settings or manage roles
+
+- **Channel Members (Non-Queue-Members)**: Users in the channel but not in the queue
+  - Can VIEW all pending and accepted requests in the queue (read-only)
+  - Cannot accept, reject, or interact with requests
+  - Provides transparency for backlog visibility
+
+### Request Lifecycle
+
+**States:**
+1. **Pending**: Initial state after creation
+   - Request is awaiting acceptance
+   - Can be accepted by authorized users (recipient, queue admins/members)
+   - Can be rejected by authorized users
+
+2. **Accepted**: A user has taken ownership of the request
+   - Assigned to the user who accepted it (AcceptedByID)
+   - Can be completed by either the acceptor OR the original requester
+   - Cannot be accepted by multiple users (first-come-first-served)
+
+3. **Rejected**: Request was declined
+   - MUST include a rejection reason
+   - Requester is notified with the rejection reason
+   - Terminal state (no further transitions)
+
+4. **Completed**: Request was fulfilled
+   - Requester is notified of completion
+   - Terminal state (no further transitions)
+
+**Transition Rules:**
+- Pending → Accepted (by authorized recipient)
+- Pending → Rejected (by authorized recipient, with reason)
+- Accepted → Completed (by acceptor OR original requester)
+- Accepted → Rejected (by acceptor OR original requester, with reason)
+- Creator cannot accept their own request
+
+### Authorization Model
+
+**For User Recipients:**
+- Only the specified user can accept/reject the request
+
+**For Channel Recipients:**
+- Any member of the channel can accept/reject the request
+
+**For Queue Recipients:**
+- **Admins & Members**: Can accept/reject requests
+- **Channel members (non-queue-members)**: Can VIEW requests (read-only)
+- **Non-channel members**: Cannot view or interact with requests
+
+**For Completion:**
+- Request acceptor can complete/reject
+- Original requester can complete/reject
+- No one else can complete/reject
+
+### Notifications
+
+**Request Created:**
+- User recipient: DM to user
+- Channel recipient: Message in channel
+- Queue recipient: Message in queue's associated channel
+
+**Request Accepted:**
+- DM to original requester: "Your request '{title}' has been accepted by {user}"
+
+**Request Rejected:**
+- DM to original requester: "Your request '{title}' has been rejected. Reason: {reason}"
+
+**Request Completed:**
+- Notify stakeholders (requester and acceptor, if different from actor)
+- DM: "Request '{title}' has been completed"
+
+### Queue Discovery & Filtering
+
+**List Queues Command (`/request list-queues`):**
+- Shows ONLY queues where ChannelId matches the channel the command was run from
+- Example: `/request list-queues` in #engineering → shows only #engineering queues
+- Displays queues as a dropdown selector
+- When a queue is selected → displays all pending and accepted requests in that queue
+- Completed and rejected requests are hidden from the list
 
 ## Project Architecture
 - Adhere to hexagonal (ports & adapters) best practices and patterns.
@@ -229,6 +340,50 @@ type ForMessagingUsers interface {
 - Update README with new commands
 - Database migrations if schema changes needed
 
+### Phase 11: Queue List & Request Browsing Feature ⏭️ NEXT PRIORITY
+**Goal:** Implement channel-scoped queue listing with request browsing and permission-based interactions
+
+**Business Context:**
+- Users run `/request list-queues` to view queues in their current channel
+- Select a queue to browse pending/accepted requests
+- Admins/members can accept/reject requests
+- Non-members can view requests (read-only for backlog transparency)
+- Rejection requires a reason sent in notification
+
+**Schema Changes Required:**
+- Add `ChannelId` field to Queue domain and database (required, indexed)
+- Add `RejectionReason` field to Request domain and database (optional)
+- Update domain constructors and business methods
+- Create and apply database migration
+
+**Repository Layer:**
+- Add `FindByChannelId` method to ForReadingQueues
+- Add `FindByRecipientAndStatus` method to ForReadingRequests
+
+**Service Layer:**
+- Update QueueService.CreateQueue to require channelId
+- Add QueueService.ListQueuesByChannel method
+- Update RequestResponseService.RejectRequest to require reason
+- Add RequestResponseService.GetQueueRequests method
+
+**View Layer:**
+- Add RenderQueueListView to ForRenderingViews port
+- Implement queue browser UI with dropdown and request list
+- Render Accept/Reject buttons conditionally based on permissions
+
+**Handler Layer:**
+- Wire queueService and requestResponseService to SlackHandler
+- Implement handleListQueues command handler
+- Add block action handlers for queue selection, accept, reject
+- Add rejection reason modal
+
+**Success Criteria:**
+- Queues scoped to channels via ChannelId
+- List queues filtered by current channel
+- Display pending/accepted requests only
+- Permission-based UI (interactive vs read-only)
+- Rejection with mandatory reason and notification
+
 ## Dependency Graph
 
 ```
@@ -255,6 +410,7 @@ Phase 3 (Secondary Ports) → Phase 6 (Adapters) → Phase 5 (Response Service) 
 | 8 | ⏳ In Progress | Multiple | High | E2E |
 | 9 | 📋 Pending | Multiple | Medium | All types |
 | 10 | 📋 Pending | Config | Medium | Manual + E2E |
+| 11 | ⏭️ Next Priority | Multiple | Medium-High | Integration + E2E |
 
 ## Risk Areas & Considerations
 
@@ -263,6 +419,9 @@ Phase 3 (Secondary Ports) → Phase 6 (Adapters) → Phase 5 (Response Service) 
 3. **Slack Rate Limits:** Sending many notifications (not yet optimized)
 4. **Error Recovery:** What happens if notification fails but request is created? (not yet handled)
 5. ✅ **Queue Admin/Member Management:** Stored as JSON arrays in database, managed through domain methods
+6. ⚠️ **Queue ChannelId Missing:** Queue domain model and database schema need ChannelId field
+7. ⚠️ **Rejection Reason Missing:** Request domain model needs RejectionReason field for business requirement compliance
+8. **Channel Membership Checking:** Need to verify users are channel members before showing queue requests (future consideration)
 
 ## Recent Updates (Current Session)
 
