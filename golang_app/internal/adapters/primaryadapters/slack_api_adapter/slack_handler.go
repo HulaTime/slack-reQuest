@@ -7,23 +7,32 @@ import (
 	"log/slog"
 	"net/http"
 	"request/internal/adapters/secondaryadapters/slackadapter"
+	"request/internal/app/ports/primaryports"
 	"request/internal/app/ports/secondaryports"
-	"request/internal/app/services"
+	"request/internal/domain"
 	"request/pkg/loghandlers"
 
 	"github.com/slack-go/slack"
 )
 
 type SlackHandler struct {
-	requestService *services.RequestService
-	queueService   *services.QueueService
-	viewRenderer   *slackadapter.SlackViewRenderer
+	requestHandler        primaryports.ForHandlingRequests
+	queueManager          primaryports.ForManagingQueues
+	formSubmissionHandler primaryports.ForHandlingFormSubmissions
+	modalRenderer         secondaryports.ForRenderingModals
 }
 
-func NewSlackHandler(requestService *services.RequestService, viewRenderer *slackadapter.SlackViewRenderer) *SlackHandler {
+func NewSlackHandler(
+	requestHandler primaryports.ForHandlingRequests,
+	queueManager primaryports.ForManagingQueues,
+	formSubmissionHandler primaryports.ForHandlingFormSubmissions,
+	modalRenderer secondaryports.ForRenderingModals,
+) *SlackHandler {
 	return &SlackHandler{
-		requestService: requestService,
-		viewRenderer:   viewRenderer,
+		requestHandler:        requestHandler,
+		queueManager:          queueManager,
+		formSubmissionHandler: formSubmissionHandler,
+		modalRenderer:         modalRenderer,
 	}
 }
 
@@ -61,7 +70,7 @@ func (h *SlackHandler) HandleSlashCommand(w http.ResponseWriter, r *http.Request
 	case "manage-queue":
 		h.handleNewRequest(ctx, w, r, cmd)
 	case "list-queues":
-		h.handleListQueus(ctx, w, r, cmd)
+		h.handleListQueues(ctx, w, r, cmd)
 	case "delete-queues":
 		h.handleNewRequest(ctx, w, r, cmd)
 	default:
@@ -86,13 +95,13 @@ func (h *SlackHandler) handleNoArgs(ctx context.Context, w http.ResponseWriter, 
 
 func (h *SlackHandler) handleNewQueue(ctx context.Context, w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
 	slog.DebugContext(ctx, "Handling new queue command")
-	h.viewRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
+	h.modalRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
 	return
 }
 
 func (h *SlackHandler) handleListQueues(ctx context.Context, w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
 	slog.DebugContext(ctx, "Handling list queues command")
-	h.viewRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
+	h.modalRenderer.RenderQueueForm(ctx, cmd.TriggerID, secondaryports.QueueFormView{})
 	return
 }
 
@@ -122,7 +131,7 @@ func (h *SlackHandler) HandleInteractions(w http.ResponseWriter, r *http.Request
 func (h *SlackHandler) handleNewRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, cmd slack.SlashCommand) {
 	slog.DebugContext(ctx, "Handling new request command")
 
-	err := h.requestService.OpenNewRequestForm(ctx, cmd.TriggerID)
+	err := h.requestHandler.OpenNewRequestForm(ctx, cmd.TriggerID)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to open new request modal: %v", err)
 
@@ -154,7 +163,7 @@ func (h *SlackHandler) handleBlockActions(w http.ResponseWriter, r *http.Request
 					slog.String("recipientType", recipientType),
 					slog.String("viewID", payload.View.ID))
 
-				err := h.viewRenderer.UpdateRequestFormWithRecipient(ctx, payload.View.ID, slackadapter.RequestRecipientType(recipientType))
+				err := h.modalRenderer.UpdateRequestForm(ctx, payload.View.ID, domain.RequestRecipientType(recipientType))
 				if err != nil {
 					slog.ErrorContext(ctx, "Failed to update request form",
 						slog.String("err", err.Error()))
@@ -171,8 +180,64 @@ func (h *SlackHandler) handleBlockActions(w http.ResponseWriter, r *http.Request
 }
 
 func (h *SlackHandler) handleViewSubmission(w http.ResponseWriter, r *http.Request, payload *slack.InteractionCallback) {
-	slog.InfoContext(r.Context(), fmt.Sprintf("View submission received: %+v", payload.View.State.Values))
+	ctx := r.Context()
+	parser := NewFormParser()
 
-	w.Header().Set("Content-Type", "application/json")
+	switch payload.View.CallbackID {
+	case slackadapter.CallbackIDRequestForm:
+		formData, err := parser.ParseRequestForm(*payload)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to parse request form",
+				slog.String("err", err.Error()))
+			h.respondWithError(w, err)
+			return
+		}
+
+		if err := h.formSubmissionHandler.HandleRequestFormSubmission(ctx, formData); err != nil {
+			slog.ErrorContext(ctx, "Failed to handle request form submission",
+				slog.String("err", err.Error()))
+			h.respondWithError(w, err)
+			return
+		}
+
+		slog.InfoContext(ctx, "Request created successfully",
+			slog.String("createdBy", formData.CreatedByID))
+
+	case slackadapter.CallbackIDQueueForm:
+		formData, err := parser.ParseQueueForm(*payload)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to parse queue form",
+				slog.String("err", err.Error()))
+			h.respondWithError(w, err)
+			return
+		}
+
+		if err := h.formSubmissionHandler.HandleQueueFormSubmission(ctx, formData); err != nil {
+			slog.ErrorContext(ctx, "Failed to handle queue form submission",
+				slog.String("err", err.Error()))
+			h.respondWithError(w, err)
+			return
+		}
+
+		slog.InfoContext(ctx, "Queue created successfully",
+			slog.String("createdBy", formData.CreatedById),
+			slog.String("channelId", formData.ChannelId))
+
+	default:
+		slog.WarnContext(ctx, "Unknown view submission callback",
+			slog.String("callbackId", payload.View.CallbackID))
+	}
+
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *SlackHandler) respondWithError(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"response_action": "errors",
+		"errors": map[string]string{
+			"general": err.Error(),
+		},
+	}
+	json.NewEncoder(w).Encode(response)
 }

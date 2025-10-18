@@ -17,13 +17,6 @@ const (
 	NOT_VERBATIM = false
 )
 
-type RequestRecipientType string
-
-const (
-	USER_REQUEST_RECIPIENT  RequestRecipientType = "user"
-	QUEUE_REQUEST_RECIPIENT RequestRecipientType = "queue"
-)
-
 type SlackViewRenderer struct {
 	client *slack.Client
 }
@@ -47,11 +40,11 @@ func (r *SlackViewRenderer) RenderRequestForm(ctx context.Context, triggerId str
 	return nil
 }
 
-func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, viewID string, recipientType RequestRecipientType) error {
+func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, viewID string, recipientType domain.RequestRecipientType) error {
 	options := []secondaryports.RecipientTypeOption{
-		{Value: string(USER_REQUEST_RECIPIENT), Label: "User"},
+		{Value: string(domain.RequestRecipientUser), Label: "User"},
 		{Value: "channel", Label: "Channel"},
-		{Value: string(QUEUE_REQUEST_RECIPIENT), Label: "Queue"},
+		{Value: string(domain.RequestRecipientQueue), Label: "Queue"},
 	}
 
 	blocks := r.buildRequestFormBlocks(recipientType, options)
@@ -67,7 +60,7 @@ func (r *SlackViewRenderer) UpdateRequestFormWithRecipient(ctx context.Context, 
 	return nil
 }
 
-func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType RequestRecipientType, recipientTypeOptions []secondaryports.RecipientTypeOption) slack.Blocks {
+func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType domain.RequestRecipientType, recipientTypeOptions []secondaryports.RecipientTypeOption) slack.Blocks {
 	blocks := []slack.Block{}
 
 	blocks = append(blocks, slack.NewSectionBlock(
@@ -99,47 +92,32 @@ func (r *SlackViewRenderer) buildRequestFormBlocks(selectedRecipientType Request
 
 	blocks = append(blocks, slack.NewActionBlock(BlockIDRecipientTypeAction, recipientTypeSelect))
 
+	builder := NewBlockBuilder()
 	if selectedRecipientType == "user" {
-		blocks = append(blocks, newSelectUserBlock(BlockIDUserSelect, ActionIDUserSelect))
+		blocks = append(blocks, builder.UserSelect(BlockIDUserSelect, "Select a user", "Choose user", ActionIDUserSelect))
 	} else if selectedRecipientType == "channel" {
-		blocks = append(blocks, newSelectChannelBlock("Select a channel", BlockIDChannelSelect, ActionIDChannelSelect))
+		blocks = append(blocks, builder.ChannelSelect(BlockIDChannelSelect, "Select a channel", "Choose channel", ActionIDChannelSelect))
 	} else if selectedRecipientType == "queue" {
 		slog.Error("Not implemented")
 	}
 
 	if selectedRecipientType != "" {
-		blocks = append(blocks, slack.NewInputBlock(
-			BlockIDRequestTitle,
-			slack.NewTextBlockObject(slack.PlainTextType, "Title", NO_EMOJI, NOT_VERBATIM),
-			nil,
-			slack.NewPlainTextInputBlockElement(
-				slack.NewTextBlockObject(slack.PlainTextType, "Enter request title", NO_EMOJI, NOT_VERBATIM),
-				ActionIDRequestTitle,
-			),
-		))
-
-		descriptionInput := slack.NewPlainTextInputBlockElement(
-			slack.NewTextBlockObject(slack.PlainTextType, "Enter request description", NO_EMOJI, NOT_VERBATIM),
-			ActionIDRequestDescription,
+		blocks = append(blocks,
+			builder.TextInput(BlockIDRequestTitle, "Title", "Enter request title", false, ActionIDRequestTitle),
+			builder.TextInput(BlockIDRequestDescription, "Description", "Enter request description", true, ActionIDRequestDescription),
 		)
-		descriptionInput.Multiline = true
-
-		blocks = append(blocks, slack.NewInputBlock(
-			BlockIDRequestDescription,
-			slack.NewTextBlockObject(slack.PlainTextType, "Description", NO_EMOJI, NOT_VERBATIM),
-			nil,
-			descriptionInput,
-		))
 	}
 
 	return slack.Blocks{BlockSet: blocks}
 }
 
 func (r *SlackViewRenderer) RenderQueueForm(ctx context.Context, triggerId string, view secondaryports.QueueFormView) error {
-	channelSelectBlock := newSelectChannelBlock("Choose a channel to create the queue in...", BlockIDQueueChannel, ActionIDQueueChannelSelect)
-	queueTitleBlock := newTextInputBlock("Title", "Enter queue title...", BlockIDQueueName, ActionIDQueueName)
-	descriptionBlock := newMultilineTextInputBlock("Description", "Enter queue description...", BlockIDQueueDescription, ActionIDQueueDescription)
-	queueAdminsBlock := newMultiUserSelectBlock("Select queue admins", "Select users to manage queue...", BlockIDQueueAdmins, ActionIDQueueAdminsSelect)
+	builder := NewBlockBuilder()
+
+	channelSelectBlock := builder.ChannelSelect(BlockIDQueueChannel, "Choose a channel to create the queue in...", "Choose channel", ActionIDQueueChannelSelect)
+	queueTitleBlock := builder.TextInput(BlockIDQueueName, "Title", "Enter queue title...", false, ActionIDQueueName)
+	descriptionBlock := builder.TextInput(BlockIDQueueDescription, "Description", "Enter queue description...", true, ActionIDQueueDescription)
+	queueAdminsBlock := builder.MultiUserSelect(BlockIDQueueAdmins, "Select queue admins", "Select users to manage queue...", ActionIDQueueAdminsSelect)
 
 	modalRequest := newModalViewRequest(CallbackIDQueueForm, "Create New Queue", true)
 	modalRequest.Blocks.BlockSet = append(modalRequest.Blocks.BlockSet, []slack.Block{channelSelectBlock, queueTitleBlock, descriptionBlock, queueAdminsBlock}...)
@@ -147,18 +125,26 @@ func (r *SlackViewRenderer) RenderQueueForm(ctx context.Context, triggerId strin
 	_, err := r.client.OpenView(triggerId, *modalRequest)
 	if err != nil {
 		fmt.Println("err", err)
-		return fmt.Errorf("failed to open request modal: %w", err)
+		return fmt.Errorf("failed to open queue modal: %w", err)
 	}
 
 	return nil
 }
 
-func (r *SlackViewRenderer) RenderRequestNotification(ctx context.Context, userId string, request *domain.Request) (messageTs string, channelId string, error error) {
-	return "", "", fmt.Errorf("not implemented")
+func (r *SlackViewRenderer) UpdateRequestForm(ctx context.Context, viewId string, recipientType domain.RequestRecipientType) error {
+	return r.UpdateRequestFormWithRecipient(ctx, viewId, recipientType)
 }
 
-func (r *SlackViewRenderer) UpdateRequestNotification(ctx context.Context, channelId, messageTs string, request *domain.Request) error {
-	return fmt.Errorf("not implemented")
+func (r *SlackViewRenderer) RenderQueueSelector(ctx context.Context, triggerId string, queues []*domain.Queue) error {
+	return fmt.Errorf("not implemented: RenderQueueSelector")
 }
 
-var _ secondaryports.ForRenderingViews = (*SlackViewRenderer)(nil)
+func (r *SlackViewRenderer) RenderRequestList(ctx context.Context, viewId string, requests []*domain.Request) error {
+	return fmt.Errorf("not implemented: RenderRequestList")
+}
+
+func (r *SlackViewRenderer) RenderRequestDetail(ctx context.Context, triggerId string, request *domain.Request, userPermissions secondaryports.Permissions) error {
+	return fmt.Errorf("not implemented: RenderRequestDetail")
+}
+
+var _ secondaryports.ForRenderingModals = (*SlackViewRenderer)(nil)

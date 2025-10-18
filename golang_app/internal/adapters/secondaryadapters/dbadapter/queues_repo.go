@@ -42,6 +42,7 @@ func (s *StringSlice) Scan(value interface{}) error {
 
 type QueueDTO struct {
 	ID          string      `gorm:"not null;primaryKey;type:varchar;size:50"`
+	ChannelId   string      `gorm:"index;type:varchar;size:50"`
 	Name        string      `gorm:"not null;type:varchar;size:255"`
 	Description string      `gorm:"type:varchar;size:255"`
 	CreatedById string      `gorm:"not null;index"`
@@ -58,6 +59,7 @@ func (QueueDTO) TableName() string {
 func (dto *QueueDTO) ToDomain() *domain.Queue {
 	return &domain.Queue{
 		ID:          dto.ID,
+		ChannelId:   dto.ChannelId,
 		Name:        dto.Name,
 		Description: dto.Description,
 		CreatedById: dto.CreatedById,
@@ -71,6 +73,7 @@ func (dto *QueueDTO) ToDomain() *domain.Queue {
 func NewQueueDTO(queue *domain.Queue) *QueueDTO {
 	return &QueueDTO{
 		ID:          queue.ID,
+		ChannelId:   queue.ChannelId,
 		Name:        queue.Name,
 		Description: queue.Description,
 		CreatedById: queue.CreatedById,
@@ -120,6 +123,19 @@ func (r *QueuesReader) FindByCreatedById(ctx context.Context, createdById string
 	var dtos []QueueDTO
 	if err := r.db.WithContext(ctx).Find(&dtos, "created_by_id = ?", createdById).Error; err != nil {
 		return nil, fmt.Errorf("failed to find queues by created_by_id: %w", err)
+	}
+
+	queues := make([]*domain.Queue, len(dtos))
+	for i, dto := range dtos {
+		queues[i] = dto.ToDomain()
+	}
+	return queues, nil
+}
+
+func (r *QueuesReader) FindByChannelId(ctx context.Context, channelId string) ([]*domain.Queue, error) {
+	var dtos []QueueDTO
+	if err := r.db.WithContext(ctx).Find(&dtos, "channel_id = ?", channelId).Error; err != nil {
+		return nil, fmt.Errorf("failed to find queues by channel_id: %w", err)
 	}
 
 	queues := make([]*domain.Queue, len(dtos))

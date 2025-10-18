@@ -12,5 +12,6 @@ type ForStoringQueues interface {
 type ForReadingQueues interface {
 	GetById(ctx context.Context, requestId string) (*domain.Queue, error)
 	FindByCreatedById(ctx context.Context, createdById string) ([]*domain.Queue, error)
+	FindByChannelId(ctx context.Context, channelId string) ([]*domain.Queue, error)
 	FindAll(ctx context.Context) ([]*domain.Queue, error)
 }

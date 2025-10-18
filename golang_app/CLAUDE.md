@@ -368,14 +368,41 @@ type ForMessagingUsers interface {
 
 **View Layer:**
 - Add RenderQueueListView to ForRenderingViews port
-- Implement queue browser UI with dropdown and request list
-- Render Accept/Reject buttons conditionally based on permissions
+- Add RenderQueueRequestsView to ForRenderingViews port
+- Add RenderRequestDetailView to ForRenderingViews port
+- Implement three-stage modal flow:
+
+  **Stage 1: Queue Selection Modal**
+  - Display static select dropdown with queues for current channel
+  - User selects a queue from the dropdown
+
+  **Stage 2: Request List View (updates modal)**
+  - Show all pending/accepted requests for selected queue
+  - Each request displayed as section block with accessory button "Details..."
+  - Section shows: Request title only
+  - Button action pushes detail view onto modal stack
+
+  **Stage 3: Request Detail View (pushed onto stack)**
+  - Header: Request title
+  - Metadata: "Created by @username on YYYY-MM-DD HH:MM"
+  - Multiline text block: Full request description
+  - Status-dependent footer:
+    - **If Pending**: Show Accept/Reject action buttons (if user has permission)
+    - **If Accepted/Rejected/Completed**: Show status info "Status: Accepted by @username on YYYY-MM-DD HH:MM"
+  - Automatic back button (←) in header returns to request list
 
 **Handler Layer:**
 - Wire queueService and requestResponseService to SlackHandler
-- Implement handleListQueues command handler
-- Add block action handlers for queue selection, accept, reject
-- Add rejection reason modal
+- Implement `/request list-queues` command handler
+  - Opens Stage 1 modal with queue selector
+- Add block action handler for queue selection
+  - Updates modal to Stage 2 (request list)
+- Add block action handler for "Details..." button
+  - Pushes Stage 3 (request detail) onto view stack using views.push
+- Add block action handlers for Accept/Reject buttons in detail view
+  - Accept: Call RequestResponseService.AcceptRequest
+  - Reject: Open rejection reason modal, then call RequestResponseService.RejectRequest
+- Add rejection reason modal submission handler
 
 **Success Criteria:**
 - Queues scoped to channels via ChannelId

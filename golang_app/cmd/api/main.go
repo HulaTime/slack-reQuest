@@ -50,20 +50,30 @@ func main() {
 	slackClient := slack.New(slackToken)
 	slackViewRenderer := slackadapter.NewSlackViewRenderer(slackClient)
 	slackMessenger := slackadapter.NewSlackMessenger(slackClient)
+	slackMessageRenderer := slackadapter.NewMessageRenderer(slackClient)
 
 	requestService := services.NewRequestService(slackViewRenderer, requestsWriter)
-	queueService := services.NewQueueService(queuesWriter, queuesReader, slackViewRenderer)
+	queueService := services.NewQueueService(queuesWriter, queuesReader)
 	requestResponseService := services.NewRequestResponseService(
 		requestsWriter,
 		requestsReader,
 		queuesReader,
 		slackMessenger,
 	)
-
-	_ = queueService
+	formSubmissionService := services.NewFormSubmissionService(
+		requestsWriter,
+		queuesWriter,
+		slackMessenger,
+		slackMessageRenderer,
+	)
 	_ = requestResponseService
 
-	slackHandler := slackapiadapter.NewSlackHandler(requestService, slackViewRenderer)
+	slackHandler := slackapiadapter.NewSlackHandler(
+		requestService,
+		queueService,
+		formSubmissionService,
+		slackViewRenderer,
+	)
 
 	http.HandleFunc("/slack/commands", slackHandler.HandleSlashCommand)
 	http.HandleFunc("/slack/interactions", slackHandler.HandleInteractions)

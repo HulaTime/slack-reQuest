@@ -47,12 +47,12 @@ func (s *RequestResponseService) AcceptRequest(ctx context.Context, requestId, u
 		return fmt.Errorf("request not found: %w", err)
 	}
 
-	canRespond, err := s.canUserRespondToRequest(ctx, request, userId)
+	authCtx, err := s.buildAuthorizationContext(ctx, request, userId)
 	if err != nil {
-		return fmt.Errorf("failed to check authorization: %w", err)
+		return fmt.Errorf("failed to build authorization context: %w", err)
 	}
 
-	if !canRespond {
+	if !authCtx.CanAccept() {
 		slog.WarnContext(ctx, "Unauthorized attempt to accept request",
 			slog.String("requestId", requestId),
 			slog.String("userId", userId),
@@ -89,7 +89,7 @@ func (s *RequestResponseService) AcceptRequest(ctx context.Context, requestId, u
 	return nil
 }
 
-func (s *RequestResponseService) RejectRequest(ctx context.Context, requestId, userId string) error {
+func (s *RequestResponseService) RejectRequest(ctx context.Context, requestId, userId, reason string) error {
 	if requestId == "" {
 		return fmt.Errorf("request ID is required")
 	}
@@ -98,24 +98,28 @@ func (s *RequestResponseService) RejectRequest(ctx context.Context, requestId, u
 		return fmt.Errorf("user ID is required")
 	}
 
+	if reason == "" {
+		return fmt.Errorf("rejection reason is required")
+	}
+
 	request, err := s.requestsReader.GetById(ctx, requestId)
 	if err != nil {
 		return fmt.Errorf("request not found: %w", err)
 	}
 
-	canRespond, err := s.canUserRespondToRequest(ctx, request, userId)
+	authCtx, err := s.buildAuthorizationContext(ctx, request, userId)
 	if err != nil {
-		return fmt.Errorf("failed to check authorization: %w", err)
+		return fmt.Errorf("failed to build authorization context: %w", err)
 	}
 
-	if !canRespond {
+	if !authCtx.CanReject() {
 		slog.WarnContext(ctx, "Unauthorized attempt to reject request",
 			slog.String("requestId", requestId),
 			slog.String("userId", userId))
 		return fmt.Errorf("user is not authorized to respond to this request")
 	}
 
-	err = request.Reject()
+	err = request.Reject(reason)
 	if err != nil {
 		return fmt.Errorf("failed to reject request: %w", err)
 	}
@@ -157,7 +161,12 @@ func (s *RequestResponseService) CompleteRequest(ctx context.Context, requestId,
 		return fmt.Errorf("request not found: %w", err)
 	}
 
-	if !request.CanBeCompletedBy(userId) {
+	authCtx, err := s.buildAuthorizationContext(ctx, request, userId)
+	if err != nil {
+		return fmt.Errorf("failed to build authorization context: %w", err)
+	}
+
+	if !authCtx.CanComplete() {
 		slog.WarnContext(ctx, "Unauthorized attempt to complete request",
 			slog.String("requestId", requestId),
 			slog.String("userId", userId),
@@ -262,20 +271,18 @@ func (s *RequestResponseService) ListRecipientRequests(ctx context.Context, reci
 	return requests, nil
 }
 
-func (s *RequestResponseService) canUserRespondToRequest(ctx context.Context, request *domain.Request, userId string) (bool, error) {
-	var queueAdminIds []string
-	var queueMemberIds []string
+func (s *RequestResponseService) buildAuthorizationContext(ctx context.Context, request *domain.Request, userId string) (*domain.AuthorizationContext, error) {
+	var queue *domain.Queue
 
 	if request.Recipient.Type == domain.RequestRecipientQueue {
-		queue, err := s.queuesReader.GetById(ctx, request.Recipient.ID)
+		q, err := s.queuesReader.GetById(ctx, request.Recipient.ID)
 		if err != nil {
-			return false, fmt.Errorf("failed to get queue: %w", err)
+			return nil, fmt.Errorf("failed to get queue: %w", err)
 		}
-		queueAdminIds = queue.AdminIds
-		queueMemberIds = queue.MemberIds
+		queue = q
 	}
 
-	return request.CanBeRespondedToBy(userId, queueAdminIds, queueMemberIds), nil
+	return domain.NewAuthorizationContext(request, queue, userId), nil
 }
 
 func (s *RequestResponseService) notifyRequestCreator(ctx context.Context, request *domain.Request, action string) error {

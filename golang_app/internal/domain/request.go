@@ -16,9 +16,9 @@ const (
 	RequestCompleted RequestStatus = "completed"
 )
 const (
-	RequestRecipientUser  RequestRecipientType = "user"
-	RequestRecipientGroup RequestRecipientType = "group"
-	RequestRecipientQueue RequestRecipientType = "queue"
+	RequestRecipientUser    RequestRecipientType = "user"
+	RequestRecipientChannel RequestRecipientType = "channel"
+	RequestRecipientQueue   RequestRecipientType = "queue"
 )
 
 func (rs RequestStatus) Valid() bool {
@@ -32,7 +32,7 @@ func (rs RequestStatus) Valid() bool {
 
 func (rt RequestRecipientType) Valid() bool {
 	switch rt {
-	case RequestRecipientUser, RequestRecipientGroup, RequestRecipientQueue:
+	case RequestRecipientUser, RequestRecipientChannel, RequestRecipientQueue:
 		return true
 	default:
 		return false
@@ -52,15 +52,16 @@ func (r *RequestRecipient) Valid() bool {
 }
 
 type Request struct {
-	ID           string
-	Title        string
-	Description  string
-	AcceptedByID string
-	CreatedByID  string
-	Recipient    *RequestRecipient
-	Status       RequestStatus
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID              string
+	Title           string
+	Description     string
+	AcceptedByID    string
+	CreatedByID     string
+	Recipient       *RequestRecipient
+	Status          RequestStatus
+	RejectionReason string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func NewRequest(requestId string, title string, createdById string, recipient *RequestRecipient) (Request, error) {
@@ -95,12 +96,17 @@ func (r *Request) Accept(userId string) error {
 	return nil
 }
 
-func (r *Request) Reject() error {
-	if r.Status != RequestPending {
-		return errors.New("request can only be rejected when in pending status")
+func (r *Request) Reject(reason string) error {
+	if r.Status != RequestPending && r.Status != RequestAccepted {
+		return errors.New("request can only be rejected when in pending or accepted status")
+	}
+
+	if reason == "" {
+		return errors.New("rejection reason is required")
 	}
 
 	r.Status = RequestRejected
+	r.RejectionReason = reason
 	r.UpdatedAt = time.Now()
 	return nil
 }
@@ -135,7 +141,7 @@ func (r *Request) CanBeRespondedToBy(userId string, queueAdminIds []string, queu
 			}
 		}
 		return false
-	case RequestRecipientGroup:
+	case RequestRecipientChannel:
 		return true
 	default:
 		return false

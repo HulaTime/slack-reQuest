@@ -7,6 +7,7 @@ import (
 
 type Queue struct {
 	ID          string
+	ChannelId   string
 	Name        string
 	Description string
 	CreatedById string

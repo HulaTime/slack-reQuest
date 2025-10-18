@@ -13,16 +13,17 @@ import (
 
 // Determines table structure and changes will generate migrations via atlas
 type RequestDTO struct {
-	ID            string    `gorm:"not null;primaryKey;type:varchar;size:50"`
-	Title         string    `gorm:"not null;type:varchar;size:255"`
-	Description   string    `gorm:"type:varchar;size:500"`
-	AcceptedByID  string    `gorm:"index"`
-	CreatedByID   string    `gorm:"not null;index"`
-	RecipientID   string    `gorm:"not null;index"`
-	RecipientType string    `gorm:"not null"`
-	Status        string    `gorm:"not null;index"`
-	CreatedAt     time.Time `gorm:"not null"`
-	UpdatedAt     time.Time `gorm:"not null"`
+	ID              string    `gorm:"not null;primaryKey;type:varchar;size:50"`
+	Title           string    `gorm:"not null;type:varchar;size:255"`
+	Description     string    `gorm:"type:varchar;size:500"`
+	AcceptedByID    string    `gorm:"index"`
+	CreatedByID     string    `gorm:"not null;index"`
+	RecipientID     string    `gorm:"not null;index"`
+	RecipientType   string    `gorm:"not null"`
+	Status          string    `gorm:"not null;index"`
+	RejectionReason string    `gorm:"type:varchar;size:500"`
+	CreatedAt       time.Time `gorm:"not null"`
+	UpdatedAt       time.Time `gorm:"not null"`
 }
 
 // Used to set the table name by gorm + atlas
@@ -32,33 +33,35 @@ func (RequestDTO) TableName() string {
 
 func (dto *RequestDTO) ToDomain() *domain.Request {
 	return &domain.Request{
-		ID:           dto.ID,
-		Title:        dto.Title,
-		Description:  dto.Description,
-		AcceptedByID: dto.AcceptedByID,
-		CreatedByID:  dto.CreatedByID,
-		Recipient: &domain.RequestRecipient{
+		ID:              dto.ID,
+		Title:           dto.Title,
+		Description:     dto.Description,
+		AcceptedByID:    dto.AcceptedByID,
+		CreatedByID:     dto.CreatedByID,
+		Recipient:       &domain.RequestRecipient{
 			ID:   dto.RecipientID,
 			Type: domain.RequestRecipientType(dto.RecipientType),
 		},
-		Status:    domain.RequestStatus(dto.Status),
-		CreatedAt: dto.CreatedAt,
-		UpdatedAt: dto.UpdatedAt,
+		Status:          domain.RequestStatus(dto.Status),
+		RejectionReason: dto.RejectionReason,
+		CreatedAt:       dto.CreatedAt,
+		UpdatedAt:       dto.UpdatedAt,
 	}
 }
 
 func NewRequestDTO(request *domain.Request) *RequestDTO {
 	return &RequestDTO{
-		ID:            request.ID,
-		Title:         request.Title,
-		Description:   request.Description,
-		AcceptedByID:  request.AcceptedByID,
-		CreatedByID:   request.CreatedByID,
-		RecipientID:   request.Recipient.ID,
-		RecipientType: string(request.Recipient.Type),
-		Status:        string(request.Status),
-		CreatedAt:     request.CreatedAt,
-		UpdatedAt:     request.UpdatedAt,
+		ID:              request.ID,
+		Title:           request.Title,
+		Description:     request.Description,
+		AcceptedByID:    request.AcceptedByID,
+		CreatedByID:     request.CreatedByID,
+		RecipientID:     request.Recipient.ID,
+		RecipientType:   string(request.Recipient.Type),
+		Status:          string(request.Status),
+		RejectionReason: request.RejectionReason,
+		CreatedAt:       request.CreatedAt,
+		UpdatedAt:       request.UpdatedAt,
 	}
 }
 
@@ -127,6 +130,35 @@ func (r *RequestsReader) FindByRecipient(ctx context.Context, recipient domain.R
 	var dtos []RequestDTO
 	if err := r.db.WithContext(ctx).Find(&dtos, "recipient_id = ? AND recipient_type = ?", recipient.ID, string(recipient.Type)).Error; err != nil {
 		return nil, fmt.Errorf("failed to find requests by recipient: %w", err)
+	}
+
+	requests := make([]*domain.Request, len(dtos))
+	for i, dto := range dtos {
+		requests[i] = dto.ToDomain()
+	}
+	return requests, nil
+}
+
+func (r *RequestsReader) FindByRecipientAndStatuses(
+	ctx context.Context,
+	recipientId string,
+	recipientType domain.RequestRecipientType,
+	statuses []domain.RequestStatus,
+) ([]*domain.Request, error) {
+	var dtos []RequestDTO
+
+	query := r.db.WithContext(ctx).Where("recipient_id = ? AND recipient_type = ?", recipientId, string(recipientType))
+
+	if len(statuses) > 0 {
+		statusStrings := make([]string, len(statuses))
+		for i, status := range statuses {
+			statusStrings[i] = string(status)
+		}
+		query = query.Where("status IN ?", statusStrings)
+	}
+
+	if err := query.Find(&dtos).Error; err != nil {
+		return nil, fmt.Errorf("failed to find requests by recipient and statuses: %w", err)
 	}
 
 	requests := make([]*domain.Request, len(dtos))

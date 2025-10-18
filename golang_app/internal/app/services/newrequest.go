@@ -9,15 +9,15 @@ import (
 )
 
 type RequestService struct {
-	viewRenderer  secondaryports.ForRenderingViews
+	modalRenderer secondaryports.ForRenderingModals
 	requestWriter secondaryports.ForStoringRequests
 }
 
 var _ primaryports.ForHandlingRequests = (*RequestService)(nil)
 
-func NewRequestService(viewRenderer secondaryports.ForRenderingViews, requestWriter secondaryports.ForStoringRequests) *RequestService {
+func NewRequestService(modalRenderer secondaryports.ForRenderingModals, requestWriter secondaryports.ForStoringRequests) *RequestService {
 	return &RequestService{
-		viewRenderer:  viewRenderer,
+		modalRenderer: modalRenderer,
 		requestWriter: requestWriter,
 	}
 }
@@ -31,7 +31,7 @@ func (s *RequestService) OpenNewRequestForm(ctx context.Context, triggerId strin
 		},
 	}
 
-	return s.viewRenderer.RenderRequestForm(ctx, triggerId, view)
+	return s.modalRenderer.RenderRequestForm(ctx, triggerId, view)
 }
 
 func (s *RequestService) CreateRequest(ctx context.Context, r *domain.Request) error {

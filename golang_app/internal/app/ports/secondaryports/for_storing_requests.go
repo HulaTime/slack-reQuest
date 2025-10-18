@@ -14,4 +14,5 @@ type ForReadingRequests interface {
 	FindByCreatedById(ctx context.Context, createdById string) ([]*domain.Request, error)
 	FindByAcceptedById(ctx context.Context, acceptedById string) ([]*domain.Request, error)
 	FindByRecipient(ctx context.Context, recipient domain.RequestRecipient) ([]*domain.Request, error)
+	FindByRecipientAndStatuses(ctx context.Context, recipientId string, recipientType domain.RequestRecipientType, statuses []domain.RequestStatus) ([]*domain.Request, error)
 }

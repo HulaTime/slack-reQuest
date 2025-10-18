@@ -15,7 +15,6 @@ import (
 type QueueService struct {
 	queuesWriter secondaryports.ForStoringQueues
 	queuesReader secondaryports.ForReadingQueues
-	viewRenderer secondaryports.ForRenderingViews
 }
 
 var _ primaryports.ForManagingQueues = (*QueueService)(nil)
@@ -23,12 +22,10 @@ var _ primaryports.ForManagingQueues = (*QueueService)(nil)
 func NewQueueService(
 	queuesWriter secondaryports.ForStoringQueues,
 	queuesReader secondaryports.ForReadingQueues,
-	viewRenderer secondaryports.ForRenderingViews,
 ) *QueueService {
 	return &QueueService{
 		queuesWriter: queuesWriter,
 		queuesReader: queuesReader,
-		viewRenderer: viewRenderer,
 	}
 }
 

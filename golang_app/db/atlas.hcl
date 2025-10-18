@@ -5,7 +5,7 @@ data "external_schema" "gorm" {
     "-mod=mod",
     "ariga.io/atlas-provider-gorm",
     "load",
-    "--path", "../internal/adapters/secondaryadapters",
+    "--path", "../internal/adapters/secondaryadapters/dbadapter",
     "--dialect", "sqlite",
   ]
 }
